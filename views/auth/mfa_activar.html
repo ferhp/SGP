@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configurar MFA · SIGEP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+</head>
+<body class="cuerpo-login">
+  <div class="tarjeta-login" style="width: min(470px, 94vw)">
+    <div class="logo" style="font-size: 30px; text-align: center;">
+      <span class="l-azul">SIGEP</span>
+    </div>
+    <h1>Configure la verificación en dos pasos</h1>
+    <p class="sub-login">{{ correo }}</p>
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% for categoria, mensaje in mensajes %}
+      <div class="aviso {{ 'aviso-error' if categoria == 'error' else 'aviso-ok' }}">
+        <span class="material-symbols-outlined">{{ 'error' if categoria == 'error' else 'check_circle' }}</span>
+        {{ mensaje }}
+      </div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="aviso aviso-ok" style="font-weight:400">
+      <span class="material-symbols-outlined">shield_lock</span>
+      El administrador requiere MFA en su cuenta. Configúrelo una sola vez en su
+      dispositivo móvil para continuar.
+    </div>
+
+    <ol style="color:var(--texto-suave); line-height:1.8; padding-left:20px; font-size:13.5px">
+      <li>Instale en su celular Google Authenticator, Microsoft Authenticator o Authy.</li>
+      <li>Escanee este código QR con la aplicación:</li>
+    </ol>
+    <div style="text-align:center; margin:6px 0 12px">
+      <img src="{{ qr }}" alt="Código QR para configurar MFA"
+           style="border:1px solid var(--borde); border-radius:12px">
+      <p style="color:var(--texto-suave); font-size:12px; margin:6px 0 0">
+        ¿No puede escanear? Escriba esta clave manualmente:<br>
+        <code style="font-size:13px; letter-spacing:2px">{{ secreto }}</code>
+      </p>
+    </div>
+
+    <form method="post">
+      <div class="campo">
+        <label for="codigo">3. Escriba el código de 6 dígitos que muestra la app</label>
+        <input id="codigo" name="codigo" inputmode="numeric" pattern="[0-9 ]*"
+               maxlength="7" autocomplete="one-time-code" autofocus required
+               style="text-align:center; font-size:22px; letter-spacing:6px">
+      </div>
+      <button class="boton boton-sso" type="submit" style="margin-top: 14px">
+        <span class="material-symbols-outlined">verified_user</span> Activar y entrar
+      </button>
+    </form>
+    <p class="nota-login" style="margin-top:12px">
+      <a href="{{ url_for('auth.login') }}">Volver al inicio de sesión</a>
+    </p>
+  </div>
+</body>
+</html>

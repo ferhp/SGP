@@ -1,0 +1,121 @@
+{# Campos del expediente del usuario, compartidos por alta y edición. #}
+<div class="form-rejilla">
+  {% if not es_nuevo %}
+  <div class="campo">
+    <label for="id">ID</label>
+    <input id="id" value="{{ usuario.id }}" readonly
+           style="background:#f1f3f4; color:var(--texto-suave)">
+  </div>
+  {% endif %}
+  <div class="campo">
+    <label for="nombre">Nombre(s) *</label>
+    <input id="nombre" name="nombre" value="{{ usuario.nombre or '' }}" maxlength="150" required>
+  </div>
+  <div class="campo">
+    <label for="apellido_paterno">Apellido paterno</label>
+    <input id="apellido_paterno" name="apellido_paterno"
+           value="{{ usuario.apellido_paterno or '' }}" maxlength="80">
+  </div>
+  <div class="campo">
+    <label for="apellido_materno">Apellido materno</label>
+    <input id="apellido_materno" name="apellido_materno"
+           value="{{ usuario.apellido_materno or '' }}" maxlength="80">
+  </div>
+  <div class="campo {{ 'campo-ancho' if es_nuevo }}">
+    <label for="correo">Correo corporativo {{ '*' if es_nuevo }}</label>
+    {% if es_nuevo %}
+    <input id="correo" type="email" name="correo" value="{{ usuario.correo or '' }}"
+           maxlength="150" placeholder="usuario@constructora.mx" required>
+    {% else %}
+    <input id="correo" value="{{ usuario.correo }}" readonly
+           style="background:#f1f3f4; color:var(--texto-suave)"
+           title="El correo es la llave de enlace con el SSO y no se modifica">
+    {% endif %}
+  </div>
+  <div class="campo">
+    <label for="nss">NSS (11 dígitos)</label>
+    <input id="nss" name="nss" value="{{ usuario.nss or '' }}" maxlength="11"
+           inputmode="numeric" pattern="[0-9]{11}" placeholder="12345678901">
+  </div>
+  <div class="campo">
+    <label for="curp">CURP (18 caracteres)</label>
+    <input id="curp" name="curp" value="{{ usuario.curp or '' }}" maxlength="18"
+           style="text-transform:uppercase" placeholder="XXXX000000XXXXXX00">
+  </div>
+  <div class="campo">
+    <label for="rfc">RFC (12 o 13 caracteres)</label>
+    <input id="rfc" name="rfc" value="{{ usuario.rfc or '' }}" maxlength="13"
+           style="text-transform:uppercase" placeholder="XXXX000000XXX">
+  </div>
+  <div class="campo campo-ancho">
+    <label for="direccion">Dirección</label>
+    <input id="direccion" name="direccion" value="{{ usuario.direccion or '' }}" maxlength="250"
+           placeholder="Calle, número, colonia, ciudad, estado, C.P.">
+  </div>
+  <div class="campo">
+    <label for="telefono">Teléfono</label>
+    <input id="telefono" name="telefono" value="{{ usuario.telefono or '' }}" maxlength="30">
+  </div>
+  <div class="campo">
+    <label for="fecha_nacimiento">Fecha de nacimiento</label>
+    <input id="fecha_nacimiento" type="date" name="fecha_nacimiento"
+           value="{{ usuario.fecha_nacimiento or '' }}">
+  </div>
+  <div class="campo">
+    <label for="genero">Género</label>
+    <select id="genero" name="genero">
+      <option value="">Sin especificar</option>
+      {% for gen in generos %}
+      <option value="{{ gen }}" {% if gen == usuario.genero %}selected{% endif %}>{{ gen }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="fecha_ingreso">Fecha de ingreso</label>
+    <input id="fecha_ingreso" type="date" name="fecha_ingreso"
+           value="{{ usuario.fecha_ingreso or '' }}">
+  </div>
+  <div class="campo">
+    <label for="puesto">Puesto</label>
+    <input id="puesto" name="puesto" value="{{ usuario.puesto or '' }}" maxlength="100"
+           placeholder="Residente de obra, contador, analista…">
+  </div>
+  <div class="campo">
+    <label for="rol">Rol</label>
+    <select id="rol" name="rol">
+      {% for r in roles %}<option value="{{ r }}" {% if r == usuario.rol %}selected{% endif %}>{{ r }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="departamento">Departamento (define los módulos que ve)</label>
+    <select id="departamento" name="departamento">
+      {% for d in departamentos %}<option value="{{ d }}" {% if d == usuario.departamento %}selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="campo campo-check campo-ancho">
+    <input id="activo" type="checkbox" name="activo" {% if usuario.activo %}checked{% endif %}>
+    <label for="activo">Cuenta activa (puede iniciar sesión)</label>
+  </div>
+  <div class="campo campo-check campo-ancho">
+    <input id="captura_costos" type="checkbox" name="captura_costos"
+           {% if usuario.captura_costos %}checked{% endif %}>
+    <label for="captura_costos">Permiso de captura de costos (registrar, editar y
+    eliminar en el módulo Costos; los Admin siempre lo tienen)</label>
+  </div>
+  <div class="campo campo-check campo-ancho">
+    <input id="mfa_requerido" type="checkbox" name="mfa_requerido"
+           {% if usuario.mfa_requerido %}checked{% endif %}>
+    <label for="mfa_requerido">Requerir MFA (verificación en dos pasos): en su próximo
+    inicio de sesión, el sistema le pedirá configurarla en su dispositivo móvil
+    (código QR) antes de entrar{% if not es_nuevo and usuario.mfa_habilitado %};
+    este usuario ya la tiene configurada{% endif %}</label>
+  </div>
+  {% if not es_nuevo and usuario.mfa_habilitado %}
+  <div class="campo campo-check campo-ancho">
+    <input id="restablecer_mfa" type="checkbox" name="restablecer_mfa">
+    <label for="restablecer_mfa">Restablecer la verificación en dos pasos (MFA):
+    útil si el usuario perdió su dispositivo; podrá entrar solo con el SSO y
+    volver a configurarla</label>
+  </div>
+  {% endif %}
+</div>

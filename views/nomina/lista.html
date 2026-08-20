@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+{% block titulo %}Nómina{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Nómina</h1>
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="boton boton-secundario" href="{{ url_for('nomina.exportar', formato='pdf', periodo=filtro_periodo or None) }}">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('nomina.exportar', formato='xlsx', periodo=filtro_periodo or None) }}">
+      <span class="material-symbols-outlined">table_view</span> XLSX
+    </a>
+    <a class="boton" href="{{ url_for('nomina.generar') }}">
+      <span class="material-symbols-outlined">calculate</span> Generar nómina del periodo
+    </a>
+  </div>
+  <p class="sub">Recibos por periodo de la plantilla activa.</p>
+</div>
+
+<div class="rejilla-kpi">
+  <div class="kpi kpi-azul">
+    <span class="material-symbols-outlined">payments</span>
+    <div><small>Percepciones (filtro actual)</small><strong>{{ total_percepciones | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-rojo">
+    <span class="material-symbols-outlined">remove_circle</span>
+    <div><small>Deducciones</small><strong>{{ total_deducciones | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-verde">
+    <span class="material-symbols-outlined">account_balance_wallet</span>
+    <div><small>Neto pagado</small><strong>{{ total_neto | moneda }}</strong></div>
+  </div>
+</div>
+
+<form class="filtros" method="get">
+  <select name="periodo" onchange="this.form.submit()">
+    <option value="">Todos los periodos</option>
+    {% for p in periodos %}<option value="{{ p }}" {% if p == filtro_periodo %}selected{% endif %}>{{ p }}</option>{% endfor %}
+  </select>
+</form>
+
+<div class="tarjeta">
+  {% if recibos %}
+  <table class="tabla">
+    <thead>
+      <tr><th>Periodo</th><th>Empleado</th><th>Proyecto</th><th>Fecha de pago</th><th class="num">Días</th>
+      <th class="num">Percepciones</th><th class="num">Deducciones</th><th class="num">Neto</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for r in recibos %}
+      <tr>
+        <td><span class="chip chip-azul">{{ r.periodo }}</span></td>
+        <td>{{ r.empleado.nombre }}<br><small style="color:var(--texto-suave)">{{ r.empleado.puesto }}</small></td>
+        <td>
+          {% if r.empleado.proyecto %}
+          <a href="{{ url_for('proyectos.detalle', id=r.empleado.proyecto_id) }}">{{ r.empleado.proyecto.clave }}</a>
+          {% else %}<span class="chip chip-gris">Oficina central</span>{% endif %}
+        </td>
+        <td>{{ r.fecha_pago }}</td>
+        <td class="num">{{ r.dias_trabajados }}</td>
+        <td class="num">{{ r.percepciones | moneda }}</td>
+        <td class="num">{{ r.deducciones | moneda }}</td>
+        <td class="num"><strong>{{ r.neto | moneda }}</strong></td>
+        <td>
+          <form method="post" action="{{ url_for('nomina.eliminar', id=r.id) }}"
+                onsubmit="return confirm('¿Eliminar este recibo?');">
+            <button class="boton boton-peligro boton-chico" type="submit">Eliminar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio"><span class="material-symbols-outlined">receipt_long</span><p>No hay recibos para ese periodo.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

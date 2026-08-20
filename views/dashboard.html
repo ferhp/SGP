@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+{% block titulo %}Panel general{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Panel general</h1>
+  {% if 'proyectos' in modulos_visibles %}
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="boton boton-secundario" href="{{ url_for('proyectos.exportar', formato='pdf') }}">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('proyectos.exportar', formato='xlsx') }}">
+      <span class="material-symbols-outlined">table_view</span> XLSX
+    </a>
+  </div>
+  {% endif %}
+  <p class="sub">Seguimiento integrado de proyectos civiles y eléctricos: costos, contabilidad, personal y nómina.</p>
+</div>
+
+<div class="rejilla-kpi">
+  <div class="kpi kpi-azul">
+    <span class="material-symbols-outlined">engineering</span>
+    <div><small>Proyectos en curso</small><strong>{{ proyectos_activos }} de {{ total_proyectos }}</strong></div>
+  </div>
+  <div class="kpi kpi-verde">
+    <span class="material-symbols-outlined">account_balance_wallet</span>
+    <div><small>Presupuesto contratado</small><strong>{{ presupuesto_total | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-amarillo">
+    <span class="material-symbols-outlined">payments</span>
+    <div><small>Costo acumulado</small><strong>{{ costo_total | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-azul">
+    <span class="material-symbols-outlined">groups</span>
+    <div><small>Empleados activos</small><strong>{{ empleados_activos }}</strong></div>
+  </div>
+  <div class="kpi kpi-verde">
+    <span class="material-symbols-outlined">trending_up</span>
+    <div><small>Ingresos registrados</small><strong>{{ ingresos | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-rojo">
+    <span class="material-symbols-outlined">trending_down</span>
+    <div><small>Egresos registrados</small><strong>{{ egresos | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-amarillo">
+    <span class="material-symbols-outlined">receipt_long</span>
+    <div><small>Nómina pagada</small><strong>{{ nomina_total | moneda }}</strong></div>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2>Seguimiento de proyectos</h2>
+  {% if proyectos %}
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Clave</th><th>Proyecto</th><th>Tipo</th><th>Estado</th>
+        <th>Avance</th><th class="num">Presupuesto</th><th class="num">Costo</th>
+        <th>Uso de presupuesto</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in proyectos %}
+      <tr>
+        <td><a href="{{ url_for('proyectos.detalle', id=p.id) }}">{{ p.clave }}</a></td>
+        <td>{{ p.nombre }}<br><small style="color:var(--texto-suave)">{{ p.cliente }}</small></td>
+        <td><span class="chip {{ 'chip-amarillo' if p.tipo == 'Eléctrico' else 'chip-azul' }}">{{ p.tipo }}</span></td>
+        <td>
+          {% set color = {'En curso':'chip-verde','Planeación':'chip-azul','Suspendido':'chip-rojo','Terminado':'chip-gris'} %}
+          <span class="chip {{ color.get(p.estado, 'chip-gris') }}">{{ p.estado }}</span>
+        </td>
+        <td>
+          <div class="barra-avance" title="{{ p.avance }}%"><div style="width: {{ p.avance }}%"></div></div>
+          <small>{{ p.avance }} %</small>
+        </td>
+        <td class="num">{{ p.presupuesto | moneda }}</td>
+        <td class="num">{{ p.costo_total | moneda }}</td>
+        <td>
+          <div class="barra-avance {{ 'alerta' if p.uso_presupuesto > 90 }}" title="{{ p.uso_presupuesto }}%">
+            <div style="width: {{ p.uso_presupuesto }}%"></div>
+          </div>
+          <small>{{ p.uso_presupuesto }} %</small>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio">
+    <span class="material-symbols-outlined">folder_open</span>
+    <p>Aún no hay proyectos dados de alta.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

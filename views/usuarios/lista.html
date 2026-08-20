@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Usuarios</h1>
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="boton boton-secundario" href="{{ url_for('usuarios.exportar', formato='pdf') }}">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('usuarios.exportar', formato='xlsx') }}">
+      <span class="material-symbols-outlined">table_view</span> XLSX
+    </a>
+    <a class="boton" href="{{ url_for('usuarios.nuevo') }}">
+      <span class="material-symbols-outlined">person_add</span> Agregar usuario
+    </a>
+  </div>
+  <p class="sub">Cuentas creadas por el inicio de sesión SSO o pre-registradas por un administrador. Asigne rol y departamento a cada usuario.</p>
+</div>
+
+<div class="tarjeta">
+  {% if usuarios %}
+  <table class="tabla">
+    <thead>
+      <tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Departamento (vista)</th><th>Permisos</th><th>MFA</th><th>Último acceso</th><th>Estatus</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.nombre_completo }}{% if u.id == usuario_actual.id %} <span class="chip chip-azul">Usted</span>{% endif %}
+          {% if u.puesto %}<br><small style="color:var(--texto-suave)">{{ u.puesto }}</small>{% endif %}
+        </td>
+        <td>{{ u.correo }}</td>
+        <td><span class="chip {{ 'chip-amarillo' if u.rol == 'Admin' else 'chip-gris' }}">{{ u.rol }}</span></td>
+        <td><span class="chip">{{ u.departamento }}</span></td>
+        <td>
+          {% if u.rol == 'Admin' %}<span class="chip chip-amarillo">Todos</span>
+          {% elif u.captura_costos %}<span class="chip chip-verde">Captura de costos</span>
+          {% else %}<span class="chip chip-gris">Consulta</span>{% endif %}
+        </td>
+        <td>
+          {% if u.mfa_habilitado %}<span class="chip chip-verde">Activado</span>
+          {% elif u.mfa_requerido %}<span class="chip chip-amarillo">Pendiente de configurar</span>
+          {% else %}<span class="chip chip-gris">—</span>{% endif %}
+        </td>
+        <td>{{ u.ultimo_acceso.strftime('%Y-%m-%d %H:%M') if u.ultimo_acceso else '—' }}</td>
+        <td><span class="chip {{ 'chip-verde' if u.activo else 'chip-rojo' }}">{{ 'Activo' if u.activo else 'Desactivado' }}</span></td>
+        <td><a class="boton boton-secundario boton-chico" href="{{ url_for('usuarios.editar', id=u.id) }}">Editar</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio"><span class="material-symbols-outlined">person_off</span><p>Aún no hay usuarios registrados.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

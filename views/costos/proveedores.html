@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block titulo %}Proveedores{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Proveedores</h1>
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    {% if usuario_actual.puede_capturar_costos %}
+    <a class="boton" href="{{ url_for('costos.proveedor_nuevo') }}">
+      <span class="material-symbols-outlined">add_business</span> Dar de alta proveedor
+    </a>
+    {% endif %}
+    <a class="boton boton-secundario" href="{{ url_for('costos.lista') }}">
+      <span class="material-symbols-outlined">arrow_back</span> Volver a Costos
+    </a>
+  </div>
+  <p class="sub">Catálogo de proveedores; en los formularios de costos se eligen desde un listbox.</p>
+</div>
+
+<div class="tarjeta">
+  {% if proveedores %}
+  <table class="tabla">
+    <thead>
+      <tr><th>Nombre</th><th>RFC</th><th>Teléfono</th><th>Correo</th><th class="num">Costos ligados</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for p in proveedores %}
+      <tr>
+        <td>{{ p.nombre }}</td>
+        <td>{{ p.rfc or '—' }}</td>
+        <td>{{ p.telefono or '—' }}</td>
+        <td>{{ p.correo or '—' }}</td>
+        <td class="num">{{ p.costos | length }}</td>
+        <td style="white-space:nowrap">
+          {% if usuario_actual.puede_capturar_costos %}
+          <a class="boton boton-secundario boton-chico" href="{{ url_for('costos.proveedor_editar', id=p.id) }}">Editar</a>
+          {% if not p.costos %}
+          <form method="post" action="{{ url_for('costos.proveedor_eliminar', id=p.id) }}" style="display:inline"
+                onsubmit="return confirm('¿Eliminar al proveedor {{ p.nombre }}?');">
+            <button class="boton boton-peligro boton-chico" type="submit">Eliminar</button>
+          </form>
+          {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio">
+    <span class="material-symbols-outlined">storefront</span>
+    <p>Aún no hay proveedores dados de alta.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

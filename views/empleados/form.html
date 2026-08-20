@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% block titulo %}{{ 'Nuevo empleado' if es_nuevo else 'Editar empleado' }}{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>{{ 'Dar de alta empleado' if es_nuevo else 'Editar a ' + empleado.nombre }}</h1>
+</div>
+
+<div class="tarjeta formulario">
+  <form method="post">
+    <div class="form-rejilla">
+      <div class="campo campo-ancho">
+        <label for="nombre">Nombre completo *</label>
+        <input id="nombre" name="nombre" value="{{ empleado.nombre or '' }}" maxlength="150" required>
+      </div>
+      <div class="campo">
+        <label for="puesto">Puesto *</label>
+        <input id="puesto" name="puesto" value="{{ empleado.puesto or '' }}" maxlength="100" required>
+      </div>
+      <div class="campo">
+        <label for="departamento">Departamento *</label>
+        <select id="departamento" name="departamento" required>
+          <option value="">Seleccione…</option>
+          {% for d in departamentos %}<option value="{{ d }}" {% if d == empleado.departamento %}selected{% endif %}>{{ d }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="correo">Correo electrónico</label>
+        <input id="correo" type="email" name="correo" value="{{ empleado.correo or '' }}" maxlength="150">
+      </div>
+      <div class="campo">
+        <label for="telefono">Teléfono</label>
+        <input id="telefono" name="telefono" value="{{ empleado.telefono or '' }}" maxlength="30">
+      </div>
+      <div class="campo">
+        <label for="salario_diario">Salario diario (MXN)</label>
+        <input id="salario_diario" type="number" step="0.01" min="0" name="salario_diario"
+               value="{{ empleado.salario_diario or 0 }}">
+      </div>
+      <div class="campo">
+        <label for="proyecto_id">Proyecto asignado</label>
+        <select id="proyecto_id" name="proyecto_id">
+          <option value="">Sin asignar</option>
+          {% for p in proyectos %}
+          <option value="{{ p.id }}" {% if p.id == empleado.proyecto_id %}selected{% endif %}>{{ p.clave }} — {{ p.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo campo-check campo-ancho">
+        <input id="activo" type="checkbox" name="activo" {% if empleado.activo %}checked{% endif %}>
+        <label for="activo">Empleado activo (se incluye al generar la nómina)</label>
+      </div>
+    </div>
+    <div class="acciones-form">
+      <button class="boton" type="submit"><span class="material-symbols-outlined">save</span> Guardar</button>
+      <a class="boton boton-secundario" href="{{ url_for('empleados.lista') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% if not es_nuevo %}
+<form method="post" action="{{ url_for('empleados.eliminar', id=empleado.id) }}"
+      onsubmit="return confirm('¿Eliminar a {{ empleado.nombre }} y sus recibos de nómina?');">
+  <button class="boton boton-peligro" type="submit">
+    <span class="material-symbols-outlined">delete</span> Eliminar empleado
+  </button>
+</form>
+{% endif %}
+{% endblock %}

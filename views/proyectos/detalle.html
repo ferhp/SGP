@@ -1,0 +1,284 @@
+{% extends "layout.html" %}
+{% block titulo %}{{ proyecto.clave }}{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>{{ proyecto.clave }} — {{ proyecto.nombre }}</h1>
+  <a class="boton boton-secundario empujar" href="{{ url_for('proyectos.editar', id=proyecto.id) }}">
+    <span class="material-symbols-outlined">edit</span> Editar
+  </a>
+  <p class="sub">
+    <span class="chip {{ 'chip-amarillo' if proyecto.tipo == 'Eléctrico' else 'chip-azul' }}">{{ proyecto.tipo }}</span>
+    {% set color = {'En curso':'chip-verde','Planeación':'chip-azul','Suspendido':'chip-rojo','Terminado':'chip-gris'} %}
+    <span class="chip {{ color.get(proyecto.estado, 'chip-gris') }}">{{ proyecto.estado }}</span>
+    &nbsp; {{ proyecto.cliente }} · {{ proyecto.ubicacion }} ·
+    {{ proyecto.fecha_inicio }} → {{ proyecto.fecha_fin_prevista or 'sin fecha de término' }}
+  </p>
+</div>
+
+{% if proyecto.descripcion %}
+<div class="tarjeta"><p style="margin:0">{{ proyecto.descripcion }}</p></div>
+{% endif %}
+
+<div class="tarjeta">
+  <h2>Curva de avance — proyección exponencial</h2>
+  <div class="filtros" style="margin-bottom:12px">
+    <span class="chip chip-azul">Avance actual: {{ proyecto.avance }} %</span>
+    <span class="chip chip-verde">Presupuesto: {{ proyecto.presupuesto | moneda }}</span>
+    <span class="chip chip-amarillo">Costo acumulado: {{ proyecto.costo_total | moneda }} ({{ proyecto.uso_presupuesto }} % del presupuesto)</span>
+  </div>
+  <div class="barra-avance" style="height:10px; margin-bottom:14px">
+    <div style="width: {{ proyecto.avance }}%; height:10px"></div>
+  </div>
+  <p style="color:var(--texto-suave); margin:0 0 10px; font-size:12.5px">
+    Avance físico y costo acumulado (como % del presupuesto ejercido) por semana,
+    de {{ proyecto.fecha_inicio }} a {{ proyecto.fecha_fin_prevista or 'hoy' }};
+    la línea punteada al 100 % representa el presupuesto total.
+  </p>
+  <div style="height:240px"><canvas id="grafica-avance"></canvas></div>
+</div>
+
+<div class="rejilla-kpi">
+  <div class="kpi kpi-azul">
+    <span class="material-symbols-outlined">account_balance_wallet</span>
+    <div><small>Presupuesto</small><strong>{{ proyecto.presupuesto | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-amarillo">
+    <span class="material-symbols-outlined">payments</span>
+    <div><small>Costo acumulado ({{ proyecto.uso_presupuesto }} %)</small><strong>{{ proyecto.costo_total | moneda }}</strong></div>
+  </div>
+  <div class="kpi {{ 'kpi-rojo' if proyecto.presupuesto_disponible < 0 else 'kpi-verde' }}">
+    <span class="material-symbols-outlined">savings</span>
+    <div><small>Presupuesto disponible</small><strong>{{ proyecto.presupuesto_disponible | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-verde">
+    <span class="material-symbols-outlined">trending_up</span>
+    <div><small>Ingresos del proyecto</small><strong>{{ proyecto.ingresos | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-rojo">
+    <span class="material-symbols-outlined">trending_down</span>
+    <div><small>Egresos del proyecto</small><strong>{{ proyecto.egresos | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-amarillo">
+    <span class="material-symbols-outlined">receipt_long</span>
+    <div><small>Nómina del personal asignado</small><strong>{{ costo_nomina | moneda }}</strong></div>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2>Costos del proyecto
+    {% if usuario_actual.puede_capturar_costos %}
+    <a class="boton boton-chico empujar" style="float:right"
+       href="{{ url_for('costos.nuevo', proyecto=proyecto.id) }}">
+      <span class="material-symbols-outlined">add</span> Registrar costo
+    </a>
+    {% endif %}
+  </h2>
+  {% if proyecto.costos %}
+  <table class="tabla">
+    <thead><tr><th>Fecha</th><th>Categoría</th><th>Concepto</th><th>Proveedor</th><th class="num">Monto</th></tr></thead>
+    <tbody>
+      {% for c in proyecto.costos | sort(attribute='fecha', reverse=true) %}
+      <tr>
+        <td>{{ c.fecha }}</td>
+        <td><span class="chip">{{ c.categoria }}</span></td>
+        <td><a href="{{ url_for('costos.editar', id=c.id) }}">{{ c.concepto }}</a></td>
+        <td>{{ c.proveedor.nombre if c.proveedor else '—' }}</td>
+        <td class="num">{{ c.monto | moneda }}</td>
+      </tr>
+      {% endfor %}
+      <tr><td colspan="4"><strong>Total</strong></td><td class="num"><strong>{{ proyecto.costo_total | moneda }}</strong></td></tr>
+    </tbody>
+  </table>
+  {% else %}<p style="color:var(--texto-suave)">Sin costos registrados.</p>{% endif %}
+</div>
+
+<div class="tarjeta">
+  <h2>Movimientos contables</h2>
+  {% if proyecto.movimientos %}
+  <table class="tabla">
+    <thead><tr><th>Fecha</th><th>Tipo</th><th>Cuenta</th><th>Referencia</th><th>Concepto</th><th class="num">Monto</th></tr></thead>
+    <tbody>
+      {% for m in proyecto.movimientos | sort(attribute='fecha', reverse=true) %}
+      <tr>
+        <td>{{ m.fecha }}</td>
+        <td><span class="chip {{ 'chip-verde' if m.tipo == 'Ingreso' else 'chip-rojo' }}">{{ m.tipo }}</span></td>
+        <td>{{ m.cuenta }}</td>
+        <td>{{ m.referencia or '—' }}</td>
+        <td>{{ m.concepto }}</td>
+        <td class="num">{{ m.monto | moneda }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p style="color:var(--texto-suave)">Sin movimientos contables ligados al proyecto.</p>{% endif %}
+</div>
+
+<div class="tarjeta">
+  <h2>Personal asignado</h2>
+  {% if proyecto.empleados %}
+  <table class="tabla">
+    <thead><tr><th>Nombre</th><th>Puesto</th><th>Departamento</th><th class="num">Salario diario</th><th></th></tr></thead>
+    <tbody>
+      {% for e in proyecto.empleados %}
+      <tr>
+        <td><a href="{{ url_for('empleados.editar', id=e.id) }}">{{ e.nombre }}</a></td>
+        <td>{{ e.puesto }}</td>
+        <td><span class="chip">{{ e.departamento }}</span></td>
+        <td class="num">{{ e.salario_diario | moneda }}</td>
+        <td>
+          <form method="post" action="{{ url_for('proyectos.liberar_empleado', id=proyecto.id, empleado_id=e.id) }}">
+            <button class="boton boton-secundario boton-chico" type="submit">Liberar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p style="color:var(--texto-suave)">Sin personal asignado.</p>{% endif %}
+
+  {% if empleados_disponibles %}
+  <form method="post" action="{{ url_for('proyectos.asignar_empleado', id=proyecto.id) }}"
+        class="filtros" style="margin-top:14px">
+    <select name="empleado_id" required>
+      <option value="">Asignar empleado disponible…</option>
+      {% for e in empleados_disponibles %}
+      <option value="{{ e.id }}">{{ e.nombre }} — {{ e.puesto }}</option>
+      {% endfor %}
+    </select>
+    <button class="boton boton-chico" type="submit">
+      <span class="material-symbols-outlined">person_add</span> Asignar
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="tarjeta">
+  <h2>Nómina del personal asignado</h2>
+  {% if recibos %}
+  <table class="tabla">
+    <thead><tr><th>Periodo</th><th>Empleado</th><th>Fecha de pago</th><th class="num">Percepciones</th><th class="num">Deducciones</th><th class="num">Neto</th></tr></thead>
+    <tbody>
+      {% for r in recibos %}
+      <tr>
+        <td><span class="chip chip-azul">{{ r.periodo }}</span></td>
+        <td>{{ r.empleado.nombre }}</td>
+        <td>{{ r.fecha_pago }}</td>
+        <td class="num">{{ r.percepciones | moneda }}</td>
+        <td class="num">{{ r.deducciones | moneda }}</td>
+        <td class="num">{{ r.neto | moneda }}</td>
+      </tr>
+      {% endfor %}
+      <tr><td colspan="5"><strong>Total pagado</strong></td><td class="num"><strong>{{ costo_nomina | moneda }}</strong></td></tr>
+    </tbody>
+  </table>
+  {% else %}<p style="color:var(--texto-suave)">Sin recibos de nómina para el personal de este proyecto.</p>{% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    var serie = {{ serie_avance | tojson }};
+    var lienzo = document.getElementById('grafica-avance');
+    if (!lienzo || !window.Chart) { return; }
+
+    function pesos(v) {
+      return '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2,
+                                               maximumFractionDigits: 2 });
+    }
+
+    var conjuntos = [{
+      label: 'Avance físico',
+      data: serie.datos,
+      borderColor: serie.color,
+      backgroundColor: serie.color,
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBorderColor: '#fcfcfb',
+      pointBorderWidth: 1,
+      tension: 0.35,
+      clase: 'avance'
+    }];
+    if (serie.datos_costo) {
+      conjuntos.push({
+        label: 'Costo acumulado — ' + pesos(serie.costo),
+        data: serie.datos_costo,
+        borderColor: serie.color_costo,
+        backgroundColor: serie.color_costo,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBorderColor: '#fcfcfb',
+        pointBorderWidth: 1,
+        tension: 0.35,
+        clase: 'costo'
+      });
+      conjuntos.push({
+        label: 'Presupuesto (100 %) — ' + pesos(serie.presupuesto),
+        data: serie.etiquetas.map(function () { return 100; }),
+        borderColor: '#e34948',
+        backgroundColor: '#e34948',
+        borderWidth: 2,
+        borderDash: [6, 5],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        clase: 'presupuesto'
+      });
+    }
+
+    new Chart(lienzo, {
+      type: 'line',
+      data: {
+        labels: serie.etiquetas,
+        datasets: conjuntos
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#52514e', usePointStyle: true, boxHeight: 7 }
+          },
+          tooltip: {
+            callbacks: {
+              title: function (items) {
+                return serie.titulos[items[0].dataIndex];
+              },
+              label: function (item) {
+                var pct = item.parsed.y;
+                if (item.dataset.clase === 'costo') {
+                  var monto = serie.presupuesto * pct / 100;
+                  return ' Costo acumulado: ' + pct + ' % del presupuesto (' +
+                         pesos(monto) + ')';
+                }
+                if (item.dataset.clase === 'presupuesto') {
+                  return ' Presupuesto total: ' + pesos(serie.presupuesto);
+                }
+                return ' Avance físico proyectado: ' + pct + ' %';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            min: 0,
+            suggestedMax: 100,
+            title: { display: true, text: '% (avance / presupuesto ejercido)',
+                     color: '#898781' },
+            ticks: { color: '#898781' },
+            grid: { color: '#e1e0d9' }
+          },
+          x: {
+            title: { display: true, text: 'Semana (fecha)', color: '#898781' },
+            ticks: { color: '#898781', autoSkip: true, maxTicksLimit: 14,
+                     maxRotation: 45, minRotation: 0 },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  })();
+</script>
+{% endblock %}

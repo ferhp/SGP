@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block titulo %}Página no encontrada{% endblock %}
+{% block contenido %}
+<div class="vacio">
+  <span class="material-symbols-outlined">travel_explore</span>
+  <h1>404</h1>
+  <p>La página que busca no existe.</p>
+  <a class="boton" href="{{ url_for('dashboard.index') }}">Ir al panel general</a>
+</div>
+{% endblock %}

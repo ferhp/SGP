@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% block titulo %}Proyectos{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Proyectos</h1>
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="boton boton-secundario" href="{{ url_for('proyectos.exportar', formato='pdf', tipo=filtro_tipo or None, estado=filtro_estado or None) }}">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('proyectos.exportar', formato='xlsx', tipo=filtro_tipo or None, estado=filtro_estado or None) }}">
+      <span class="material-symbols-outlined">table_view</span> XLSX
+    </a>
+    <a class="boton" href="{{ url_for('proyectos.nuevo') }}">
+      <span class="material-symbols-outlined">add</span> Dar de alta proyecto
+    </a>
+  </div>
+  <p class="sub">Obras civiles y eléctricas de la constructora.</p>
+</div>
+
+<form class="filtros" method="get">
+  <select name="tipo" onchange="this.form.submit()">
+    <option value="">Todos los tipos</option>
+    {% for t in tipos %}<option value="{{ t }}" {% if t == filtro_tipo %}selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select>
+  <select name="estado" onchange="this.form.submit()">
+    <option value="">Todos los estados</option>
+    {% for e in estados %}<option value="{{ e }}" {% if e == filtro_estado %}selected{% endif %}>{{ e }}</option>{% endfor %}
+  </select>
+</form>
+
+<div class="tarjeta">
+  {% if proyectos %}
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Clave</th><th>Nombre</th><th>Tipo</th><th>Cliente</th>
+        <th>Inicio</th><th>Estado</th><th>Avance</th><th class="num">Presupuesto</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in proyectos %}
+      <tr>
+        <td><a href="{{ url_for('proyectos.detalle', id=p.id) }}">{{ p.clave }}</a></td>
+        <td>{{ p.nombre }}</td>
+        <td><span class="chip {{ 'chip-amarillo' if p.tipo == 'Eléctrico' else 'chip-azul' }}">{{ p.tipo }}</span></td>
+        <td>{{ p.cliente }}</td>
+        <td>{{ p.fecha_inicio }}</td>
+        <td>
+          {% set color = {'En curso':'chip-verde','Planeación':'chip-azul','Suspendido':'chip-rojo','Terminado':'chip-gris'} %}
+          <span class="chip {{ color.get(p.estado, 'chip-gris') }}">{{ p.estado }}</span>
+        </td>
+        <td><div class="barra-avance"><div style="width: {{ p.avance }}%"></div></div><small>{{ p.avance }} %</small></td>
+        <td class="num">{{ p.presupuesto | moneda }}</td>
+        <td>
+          <a class="boton boton-secundario boton-chico" href="{{ url_for('proyectos.editar', id=p.id) }}">Editar</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio">
+    <span class="material-symbols-outlined">folder_open</span>
+    <p>No hay proyectos con esos filtros.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

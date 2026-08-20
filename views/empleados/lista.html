@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block titulo %}Empleados{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Empleados</h1>
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="boton boton-secundario" href="{{ url_for('empleados.exportar', formato='pdf', departamento=filtro_departamento or None) }}">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('empleados.exportar', formato='xlsx', departamento=filtro_departamento or None) }}">
+      <span class="material-symbols-outlined">table_view</span> XLSX
+    </a>
+    <a class="boton" href="{{ url_for('empleados.nuevo') }}">
+      <span class="material-symbols-outlined">person_add</span> Dar de alta empleado
+    </a>
+  </div>
+  <p class="sub">Plantilla de personal y asignación a proyectos.</p>
+</div>
+
+<form class="filtros" method="get">
+  <select name="departamento" onchange="this.form.submit()">
+    <option value="">Todos los departamentos</option>
+    {% for d in departamentos %}
+    <option value="{{ d }}" {% if d == filtro_departamento %}selected{% endif %}>{{ d }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="tarjeta">
+  {% if empleados %}
+  <table class="tabla">
+    <thead>
+      <tr><th>Nombre</th><th>Puesto</th><th>Departamento</th><th>Contacto</th><th>Proyecto</th><th class="num">Salario diario</th><th>Estatus</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for e in empleados %}
+      <tr>
+        <td>{{ e.nombre }}</td>
+        <td>{{ e.puesto }}</td>
+        <td><span class="chip">{{ e.departamento }}</span></td>
+        <td>{{ e.correo or '—' }}<br><small style="color:var(--texto-suave)">{{ e.telefono }}</small></td>
+        <td>
+          {% if e.proyecto %}
+          <a href="{{ url_for('proyectos.detalle', id=e.proyecto_id) }}">{{ e.proyecto.clave }}</a>
+          {% else %}<span class="chip chip-gris">Disponible</span>{% endif %}
+        </td>
+        <td class="num">{{ e.salario_diario | moneda }}</td>
+        <td><span class="chip {{ 'chip-verde' if e.activo else 'chip-rojo' }}">{{ 'Activo' if e.activo else 'Baja' }}</span></td>
+        <td><a class="boton boton-secundario boton-chico" href="{{ url_for('empleados.editar', id=e.id) }}">Editar</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio"><span class="material-symbols-outlined">groups</span><p>No hay empleados con esos filtros.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

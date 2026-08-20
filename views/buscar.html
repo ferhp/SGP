@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block titulo %}{{ q or 'Búsqueda' }}{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Resultados de búsqueda</h1>
+  {% if q %}<p class="sub">Cerca de {{ proyectos|length + empleados|length + costos|length }} resultados para «{{ q }}»</p>{% endif %}
+</div>
+
+{% if not q %}
+<div class="vacio"><span class="material-symbols-outlined">search</span><p>Escriba algo en el buscador superior.</p></div>
+{% elif not proyectos and not empleados and not costos %}
+<div class="vacio">
+  <span class="material-symbols-outlined">search_off</span>
+  <p>No se encontraron resultados para <strong>{{ q }}</strong>.</p>
+</div>
+{% endif %}
+
+{% if proyectos %}
+<div class="tarjeta seccion-busqueda">
+  <h2>Proyectos</h2>
+  {% for p in proyectos %}
+  <div class="resultado">
+    <span class="ruta">Proyectos › {{ p.tipo }}</span><br>
+    <a href="{{ url_for('proyectos.detalle', id=p.id) }}">{{ p.clave }} — {{ p.nombre }}</a>
+    <p>{{ p.cliente }} · {{ p.ubicacion }} · {{ p.estado }} · avance {{ p.avance }} %</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if empleados %}
+<div class="tarjeta seccion-busqueda">
+  <h2>Empleados</h2>
+  {% for e in empleados %}
+  <div class="resultado">
+    <span class="ruta">Empleados › {{ e.departamento }}</span><br>
+    <a href="{{ url_for('empleados.editar', id=e.id) }}">{{ e.nombre }}</a>
+    <p>{{ e.puesto }}{% if e.proyecto %} · asignado a {{ e.proyecto.clave }}{% endif %}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if costos %}
+<div class="tarjeta seccion-busqueda">
+  <h2>Costos</h2>
+  {% for c in costos %}
+  <div class="resultado">
+    <span class="ruta">Costos › {{ c.categoria }}</span><br>
+    <a href="{{ url_for('costos.editar', id=c.id) }}">{{ c.concepto }}</a>
+    <p>{{ c.proyecto.clave }} · {{ c.monto | moneda }} · {{ c.fecha }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

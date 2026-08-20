@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block titulo %}{{ 'Nuevo proveedor' if es_nuevo else 'Editar proveedor' }}{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>{{ 'Dar de alta proveedor' if es_nuevo else 'Editar a ' + proveedor.nombre }}</h1>
+</div>
+
+<div class="tarjeta formulario">
+  <form method="post">
+    <div class="form-rejilla">
+      <div class="campo campo-ancho">
+        <label for="nombre">Nombre o razón social *</label>
+        <input id="nombre" name="nombre" value="{{ proveedor.nombre or '' }}" maxlength="150" required>
+      </div>
+      <div class="campo">
+        <label for="rfc">RFC (12 o 13 caracteres)</label>
+        <input id="rfc" name="rfc" value="{{ proveedor.rfc or '' }}" maxlength="13"
+               style="text-transform:uppercase">
+      </div>
+      <div class="campo">
+        <label for="telefono">Teléfono</label>
+        <input id="telefono" name="telefono" value="{{ proveedor.telefono or '' }}" maxlength="30">
+      </div>
+      <div class="campo campo-ancho">
+        <label for="correo">Correo electrónico</label>
+        <input id="correo" type="email" name="correo" value="{{ proveedor.correo or '' }}" maxlength="150">
+      </div>
+    </div>
+    <div class="acciones-form">
+      <button class="boton" type="submit"><span class="material-symbols-outlined">save</span> Guardar</button>
+      <a class="boton boton-secundario" href="{{ url_for('costos.proveedores') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block titulo %}Agregar usuario{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Agregar usuario</h1>
+  <p class="sub">El ID se asigna automáticamente al guardar. El usuario podrá iniciar
+  sesión con el SSO corporativo usando este correo; en su primer acceso, la cuenta se
+  vincula automáticamente con el proveedor de identidad.</p>
+</div>
+
+<div class="tarjeta formulario">
+  <form method="post">
+    {% with es_nuevo = true %}{% include "usuarios/_campos.html" %}{% endwith %}
+    <div class="acciones-form">
+      <button class="boton" type="submit">
+        <span class="material-symbols-outlined">person_add</span> Agregar usuario
+      </button>
+      <a class="boton boton-secundario" href="{{ url_for('usuarios.lista') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block titulo %}Generar nómina{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Generar nómina del periodo</h1>
+  <p class="sub">
+    Se creará un recibo para cada uno de los <strong>{{ empleados_activos }}</strong> empleados activos con salario,
+    calculando percepciones (salario diario × días) y deducciones (ISR 9 % + IMSS 3 %, simplificado).
+    Los empleados que ya tengan recibo en el periodo se omiten.
+  </p>
+</div>
+
+<div class="tarjeta formulario">
+  <form method="post">
+    <div class="form-rejilla">
+      <div class="campo">
+        <label for="periodo">Periodo *</label>
+        <input id="periodo" name="periodo" value="{{ periodo_sugerido }}" maxlength="30" required>
+      </div>
+      <div class="campo">
+        <label for="dias">Días trabajados *</label>
+        <input id="dias" type="number" name="dias" min="1" max="31" value="15" required>
+      </div>
+      <div class="campo">
+        <label for="fecha_pago">Fecha de pago *</label>
+        <input id="fecha_pago" type="date" name="fecha_pago" value="{{ hoy }}" required>
+      </div>
+    </div>
+    <div class="acciones-form">
+      <button class="boton" type="submit">
+        <span class="material-symbols-outlined">calculate</span> Generar recibos
+      </button>
+      <a class="boton boton-secundario" href="{{ url_for('nomina.lista') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

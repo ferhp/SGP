@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+{% block titulo %}Contabilidad{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Contabilidad</h1>
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="boton boton-secundario" href="{{ url_for('contabilidad.exportar', formato='pdf', proyecto=filtro_proyecto or None, tipo=filtro_tipo or None) }}">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('contabilidad.exportar', formato='xlsx', proyecto=filtro_proyecto or None, tipo=filtro_tipo or None) }}">
+      <span class="material-symbols-outlined">table_view</span> XLSX
+    </a>
+    <a class="boton" href="{{ url_for('contabilidad.nuevo') }}">
+      <span class="material-symbols-outlined">add</span> Registrar movimiento
+    </a>
+  </div>
+  <p class="sub">Ingresos y egresos por cuenta, con referencia de factura o póliza.</p>
+</div>
+
+<div class="rejilla-kpi">
+  <div class="kpi kpi-verde">
+    <span class="material-symbols-outlined">trending_up</span>
+    <div><small>Ingresos (filtro actual)</small><strong>{{ ingresos | moneda }}</strong></div>
+  </div>
+  <div class="kpi kpi-rojo">
+    <span class="material-symbols-outlined">trending_down</span>
+    <div><small>Egresos (filtro actual)</small><strong>{{ egresos | moneda }}</strong></div>
+  </div>
+  <div class="kpi {{ 'kpi-rojo' if saldo < 0 else 'kpi-azul' }}">
+    <span class="material-symbols-outlined">account_balance</span>
+    <div><small>Saldo</small><strong>{{ saldo | moneda }}</strong></div>
+  </div>
+</div>
+
+<form class="filtros" method="get">
+  <select name="proyecto" onchange="this.form.submit()">
+    <option value="">Todos los proyectos</option>
+    {% for p in proyectos %}
+    <option value="{{ p.id }}" {% if p.id == filtro_proyecto %}selected{% endif %}>{{ p.clave }} — {{ p.nombre }}</option>
+    {% endfor %}
+  </select>
+  <select name="tipo" onchange="this.form.submit()">
+    <option value="">Ingresos y egresos</option>
+    {% for t in tipos %}<option value="{{ t }}" {% if t == filtro_tipo %}selected{% endif %}>{{ t }}s</option>{% endfor %}
+  </select>
+</form>
+
+<div class="tarjeta">
+  {% if movimientos %}
+  <table class="tabla">
+    <thead>
+      <tr><th>Fecha</th><th>Tipo</th><th>Cuenta</th><th>Referencia</th><th>Concepto</th><th>Proyecto</th><th>Factura</th><th class="num">Monto</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for m in movimientos %}
+      <tr>
+        <td>{{ m.fecha }}</td>
+        <td><span class="chip {{ 'chip-verde' if m.tipo == 'Ingreso' else 'chip-rojo' }}">{{ m.tipo }}</span></td>
+        <td>{{ m.cuenta }}</td>
+        <td>{{ m.referencia or '—' }}</td>
+        <td>{{ m.concepto }}</td>
+        <td>
+          {% if m.proyecto %}
+          <a href="{{ url_for('proyectos.detalle', id=m.proyecto_id) }}">{{ m.proyecto.clave }}</a>
+          {% else %}<span class="chip chip-gris">General</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap">
+          {% if m.archivo_pdf %}
+          <a href="#" class="chip chip-rojo" title="Ver factura PDF"
+             onclick="abrirPdf('{{ url_for('contabilidad.factura', id=m.id, tipo='pdf') }}',
+                               'Factura {{ m.referencia or m.id }}'); return false;">
+            <span class="material-symbols-outlined" style="font-size:15px">picture_as_pdf</span> PDF
+          </a>
+          {% endif %}
+          {% if m.archivo_xml %}
+          <a href="{{ url_for('contabilidad.factura', id=m.id, tipo='xml') }}"
+             class="chip chip-azul" title="Descargar factura XML">
+            <span class="material-symbols-outlined" style="font-size:15px">code</span> XML
+          </a>
+          {% endif %}
+          {% if not m.archivo_pdf and not m.archivo_xml %}—{% endif %}
+        </td>
+        <td class="num">{{ m.monto | moneda }}</td>
+        <td><a class="boton boton-secundario boton-chico" href="{{ url_for('contabilidad.editar', id=m.id) }}">Editar</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio"><span class="material-symbols-outlined">account_balance</span><p>No hay movimientos con esos filtros.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

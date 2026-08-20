@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block titulo %}Editar usuario{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Editar usuario</h1>
+  <p class="sub">ID {{ usuario.id }} · {{ usuario.nombre_completo }} · {{ usuario.correo }}</p>
+</div>
+
+<div class="tarjeta formulario">
+  <form method="post">
+    {% with es_nuevo = false %}{% include "usuarios/_campos.html" %}{% endwith %}
+    <div class="acciones-form">
+      <button class="boton" type="submit"><span class="material-symbols-outlined">save</span> Guardar</button>
+      <a class="boton boton-secundario" href="{{ url_for('usuarios.lista') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+{% block titulo %}{{ 'Registrar movimiento' if es_nuevo else 'Editar movimiento' }}{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>{{ 'Registrar movimiento contable' if es_nuevo else 'Editar movimiento contable' }}</h1>
+</div>
+
+<div class="tarjeta formulario">
+  <form method="post" enctype="multipart/form-data">
+    <div class="form-rejilla">
+      <div class="campo">
+        <label for="tipo">Tipo *</label>
+        <select id="tipo" name="tipo" required>
+          <option value="">Seleccione…</option>
+          {% for t in tipos %}<option value="{{ t }}" {% if t == mov.tipo %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="cuenta">Cuenta *</label>
+        <select id="cuenta" name="cuenta" required>
+          <option value="">Seleccione…</option>
+          {% for c in cuentas %}<option value="{{ c }}" {% if c == mov.cuenta %}selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="referencia">Referencia (factura / póliza)</label>
+        <input id="referencia" name="referencia" value="{{ mov.referencia or '' }}" maxlength="50">
+      </div>
+      <div class="campo">
+        <label for="fecha">Fecha *</label>
+        <input id="fecha" type="date" name="fecha" value="{{ mov.fecha or '' }}" required>
+      </div>
+      <div class="campo campo-ancho">
+        <label for="concepto">Concepto *</label>
+        <input id="concepto" name="concepto" value="{{ mov.concepto or '' }}" maxlength="200" required>
+      </div>
+      <div class="campo">
+        <label for="proyecto_id">Proyecto (opcional)</label>
+        <select id="proyecto_id" name="proyecto_id">
+          <option value="">Gasto/ingreso general</option>
+          {% for p in proyectos %}
+          <option value="{{ p.id }}" {% if p.id == mov.proyecto_id %}selected{% endif %}>{{ p.clave }} — {{ p.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="monto">Monto (MXN) *</label>
+        <input id="monto" type="number" step="0.01" min="0.01" name="monto" value="{{ mov.monto or '' }}" required>
+      </div>
+      <div class="campo">
+        <label for="factura_xml">Factura XML {{ '(reemplaza la actual)' if mov.archivo_xml }}</label>
+        <input id="factura_xml" type="file" name="factura_xml" accept=".xml,text/xml,application/xml">
+        {% if mov.archivo_xml %}
+        <small>
+          <a href="{{ url_for('contabilidad.factura', id=mov.id, tipo='xml') }}"
+             style="color:var(--azul)">
+            <span class="material-symbols-outlined" style="font-size:16px">download</span>
+            Descargar XML actual
+          </a>
+        </small>
+        {% endif %}
+      </div>
+      <div class="campo">
+        <label for="factura_pdf">Factura PDF {{ '(reemplaza la actual)' if mov.archivo_pdf }}</label>
+        <input id="factura_pdf" type="file" name="factura_pdf" accept=".pdf,application/pdf">
+        {% if mov.archivo_pdf %}
+        <small>
+          <a href="#" onclick="abrirPdf('{{ url_for('contabilidad.factura', id=mov.id, tipo='pdf') }}',
+                                        'Factura {{ mov.referencia or mov.id }}'); return false;"
+             style="color:var(--azul)">
+            <span class="material-symbols-outlined" style="font-size:16px">visibility</span>
+            Ver PDF actual
+          </a>
+        </small>
+        {% endif %}
+      </div>
+    </div>
+    <div class="acciones-form">
+      <button class="boton" type="submit"><span class="material-symbols-outlined">save</span> Guardar</button>
+      <a class="boton boton-secundario" href="{{ url_for('contabilidad.lista') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% if not es_nuevo %}
+<form method="post" action="{{ url_for('contabilidad.eliminar', id=mov.id) }}"
+      onsubmit="return confirm('¿Eliminar este movimiento?');">
+  <button class="boton boton-peligro" type="submit">
+    <span class="material-symbols-outlined">delete</span> Eliminar movimiento
+  </button>
+</form>
+{% endif %}
+{% endblock %}

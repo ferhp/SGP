@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+{% block titulo %}Verificación en dos pasos{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Verificación en dos pasos (MFA)</h1>
+  <p class="sub">Protege su cuenta pidiendo un código de 6 dígitos de su
+  aplicación de autenticación además del inicio de sesión.</p>
+</div>
+
+{% if usuario.mfa_habilitado %}
+<div class="tarjeta formulario">
+  <h2><span class="material-symbols-outlined" style="color:var(--verde)">verified_user</span>
+      La verificación en dos pasos está activada</h2>
+  <p style="color:var(--texto-suave)">Cada vez que inicie sesión se le pedirá el
+  código de su aplicación de autenticación.</p>
+  <form method="post">
+    <input type="hidden" name="accion" value="desactivar">
+    <div class="campo" style="max-width:300px">
+      <label for="codigo">Para desactivarla, escriba el código vigente</label>
+      <input id="codigo" name="codigo" inputmode="numeric" maxlength="7"
+             autocomplete="one-time-code" required>
+    </div>
+    <div class="acciones-form">
+      <button class="boton boton-peligro" type="submit">
+        <span class="material-symbols-outlined">remove_moderator</span> Desactivar MFA
+      </button>
+      <a class="boton boton-secundario" href="{{ url_for('dashboard.index') }}">Volver</a>
+    </div>
+  </form>
+</div>
+{% else %}
+<div class="tarjeta formulario">
+  <h2>Activar la verificación en dos pasos</h2>
+  <ol style="color:var(--texto-suave); line-height:1.8; padding-left:20px">
+    <li>Instale una aplicación de autenticación (Google Authenticator,
+        Microsoft Authenticator, Authy…).</li>
+    <li>Escanee este código QR con la aplicación:</li>
+  </ol>
+  <div style="text-align:center; margin:8px 0 14px">
+    <img src="{{ qr }}" alt="Código QR para configurar MFA"
+         style="border:1px solid var(--borde); border-radius:12px">
+    <p style="color:var(--texto-suave); font-size:12.5px">
+      ¿No puede escanear? Escriba esta clave manualmente:<br>
+      <code style="font-size:14px; letter-spacing:2px">{{ secreto }}</code>
+    </p>
+  </div>
+  <form method="post">
+    <input type="hidden" name="accion" value="activar">
+    <div class="campo" style="max-width:300px">
+      <label for="codigo">3. Escriba el código de 6 dígitos que muestra la app</label>
+      <input id="codigo" name="codigo" inputmode="numeric" maxlength="7"
+             autocomplete="one-time-code" required>
+    </div>
+    <div class="acciones-form">
+      <button class="boton" type="submit">
+        <span class="material-symbols-outlined">verified_user</span> Activar MFA
+      </button>
+      <a class="boton boton-secundario" href="{{ url_for('dashboard.index') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

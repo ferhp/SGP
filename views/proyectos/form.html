@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+{% block titulo %}{{ 'Nuevo proyecto' if es_nuevo else 'Editar ' + proyecto.clave }}{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>{{ 'Dar de alta proyecto' if es_nuevo else 'Editar proyecto ' + proyecto.clave }}</h1>
+</div>
+
+<div class="tarjeta formulario">
+  <form method="post">
+    <div class="form-rejilla">
+      <div class="campo">
+        <label for="clave">Clave *</label>
+        <input id="clave" name="clave" value="{{ proyecto.clave or '' }}" maxlength="20"
+               placeholder="CIV-003 / ELE-003" required>
+      </div>
+      <div class="campo">
+        <label for="tipo">Tipo de obra *</label>
+        <select id="tipo" name="tipo" required>
+          <option value="">Seleccione…</option>
+          {% for t in tipos %}<option value="{{ t }}" {% if t == proyecto.tipo %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo campo-ancho">
+        <label for="nombre">Nombre del proyecto *</label>
+        <input id="nombre" name="nombre" value="{{ proyecto.nombre or '' }}" maxlength="150" required>
+      </div>
+      <div class="campo">
+        <label for="cliente">Cliente *</label>
+        <input id="cliente" name="cliente" value="{{ proyecto.cliente or '' }}" maxlength="150" required>
+      </div>
+      <div class="campo">
+        <label for="ubicacion">Ubicación</label>
+        <input id="ubicacion" name="ubicacion" value="{{ proyecto.ubicacion or '' }}" maxlength="200">
+      </div>
+      <div class="campo">
+        <label for="fecha_inicio">Fecha de inicio *</label>
+        <input id="fecha_inicio" type="date" name="fecha_inicio"
+               value="{{ proyecto.fecha_inicio or '' }}" required>
+      </div>
+      <div class="campo">
+        <label for="fecha_fin_prevista">Fecha de término prevista</label>
+        <input id="fecha_fin_prevista" type="date" name="fecha_fin_prevista"
+               value="{{ proyecto.fecha_fin_prevista or '' }}">
+      </div>
+      <div class="campo">
+        <label for="presupuesto">Presupuesto (MXN)</label>
+        <input id="presupuesto" type="number" step="0.01" min="0" name="presupuesto"
+               value="{{ proyecto.presupuesto or 0 }}">
+      </div>
+      <div class="campo">
+        <label for="avance">Avance físico (%)</label>
+        <input id="avance" type="number" min="0" max="100" name="avance" value="{{ proyecto.avance or 0 }}">
+      </div>
+      <div class="campo">
+        <label for="estado">Estado</label>
+        <select id="estado" name="estado">
+          {% for e in estados %}<option value="{{ e }}" {% if e == proyecto.estado %}selected{% endif %}>{{ e }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo campo-ancho">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion" rows="3">{{ proyecto.descripcion or '' }}</textarea>
+      </div>
+    </div>
+    <div class="acciones-form">
+      <button class="boton" type="submit">
+        <span class="material-symbols-outlined">save</span> Guardar
+      </button>
+      <a class="boton boton-secundario" href="{{ url_for('proyectos.lista') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% if not es_nuevo %}
+<form method="post" action="{{ url_for('proyectos.eliminar', id=proyecto.id) }}"
+      onsubmit="return confirm('¿Eliminar el proyecto {{ proyecto.clave }} y todos sus costos?');">
+  <button class="boton boton-peligro" type="submit">
+    <span class="material-symbols-outlined">delete</span> Eliminar proyecto
+  </button>
+</form>
+{% endif %}
+{% endblock %}

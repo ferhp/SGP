@@ -1,0 +1,126 @@
+{% extends "layout.html" %}
+{% block titulo %}Costos{% endblock %}
+{% block contenido %}
+<div class="encabezado-pagina">
+  <h1>Costos</h1>
+  <div class="empujar" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="boton boton-secundario" href="{{ url_for('costos.proveedores') }}">
+      <span class="material-symbols-outlined">storefront</span> Proveedores
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('costos.exportar', formato='pdf', proyecto=filtro_proyecto or None, categoria=filtro_categoria or None) }}">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </a>
+    <a class="boton boton-secundario" href="{{ url_for('costos.exportar', formato='xlsx', proyecto=filtro_proyecto or None, categoria=filtro_categoria or None) }}">
+      <span class="material-symbols-outlined">table_view</span> XLSX
+    </a>
+    {% if usuario_actual.puede_capturar_costos %}
+    <a class="boton" href="{{ url_for('costos.nuevo') }}">
+      <span class="material-symbols-outlined">add</span> Registrar costo
+    </a>
+    {% endif %}
+  </div>
+  <p class="sub">Control de costos por proyecto y categoría.</p>
+</div>
+
+{% if usuario_actual.puede_capturar_costos %}
+<div class="tarjeta">
+  <h2><span class="material-symbols-outlined" style="color:var(--azul)">edit_note</span>
+      Captura rápida de costo</h2>
+  <form method="post" action="{{ url_for('costos.nuevo') }}">
+    <div class="form-rejilla" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="campo">
+        <label for="cr-proyecto">Proyecto *</label>
+        <select id="cr-proyecto" name="proyecto_id" required>
+          <option value="">Seleccione…</option>
+          {% for p in proyectos %}
+          <option value="{{ p.id }}" {% if p.id == filtro_proyecto %}selected{% endif %}>{{ p.clave }} — {{ p.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="cr-categoria">Categoría *</label>
+        <select id="cr-categoria" name="categoria" required>
+          <option value="">Seleccione…</option>
+          {% for c in categorias %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="cr-fecha">Fecha *</label>
+        <input id="cr-fecha" type="date" name="fecha" value="{{ hoy }}" required>
+      </div>
+      <div class="campo">
+        <label for="cr-concepto">Concepto *</label>
+        <input id="cr-concepto" name="concepto" maxlength="200" placeholder="Descripción del costo" required>
+      </div>
+      <div class="campo">
+        <label for="cr-proveedor">Proveedor</label>
+        <select id="cr-proveedor" name="proveedor_id">
+          <option value="">Sin proveedor</option>
+          {% for prov in proveedores %}
+          <option value="{{ prov.id }}">{{ prov.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="cr-monto">Monto (MXN) *</label>
+        <input id="cr-monto" type="number" step="0.01" min="0.01" name="monto" placeholder="0.00" required>
+      </div>
+    </div>
+    <div class="acciones-form" style="margin-top:12px">
+      <button class="boton" type="submit">
+        <span class="material-symbols-outlined">add</span> Agregar registro
+      </button>
+    </div>
+  </form>
+</div>
+{% else %}
+<div class="aviso aviso-ok" style="font-weight:400">
+  <span class="material-symbols-outlined">visibility</span>
+  Vista de consulta: no tiene permiso de captura de costos. Un administrador
+  puede otorgarlo desde el módulo Usuarios.
+</div>
+{% endif %}
+
+<form class="filtros" method="get">
+  <select name="proyecto" onchange="this.form.submit()">
+    <option value="">Todos los proyectos</option>
+    {% for p in proyectos %}
+    <option value="{{ p.id }}" {% if p.id == filtro_proyecto %}selected{% endif %}>{{ p.clave }} — {{ p.nombre }}</option>
+    {% endfor %}
+  </select>
+  <select name="categoria" onchange="this.form.submit()">
+    <option value="">Todas las categorías</option>
+    {% for c in categorias %}<option value="{{ c }}" {% if c == filtro_categoria %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <span class="chip chip-azul empujar">Total mostrado: {{ total | moneda }}</span>
+</form>
+
+<div class="tarjeta">
+  {% if costos %}
+  <table class="tabla">
+    <thead>
+      <tr><th>Fecha</th><th>Proyecto</th><th>Categoría</th><th>Concepto</th><th>Proveedor</th><th class="num">Monto</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for c in costos %}
+      <tr>
+        <td>{{ c.fecha }}</td>
+        <td><a href="{{ url_for('proyectos.detalle', id=c.proyecto_id) }}">{{ c.proyecto.clave }}</a></td>
+        <td><span class="chip">{{ c.categoria }}</span></td>
+        <td>{{ c.concepto }}</td>
+        <td>{{ c.proveedor.nombre if c.proveedor else '—' }}</td>
+        <td class="num">{{ c.monto | moneda }}</td>
+        <td>
+          {% if usuario_actual.puede_capturar_costos %}
+          <a class="boton boton-secundario boton-chico" href="{{ url_for('costos.editar', id=c.id) }}">Editar</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vacio"><span class="material-symbols-outlined">payments</span><p>No hay costos con esos filtros.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

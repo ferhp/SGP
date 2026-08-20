@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar sesión · SIGEP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+</head>
+<body class="cuerpo-login">
+  <div class="tarjeta-login">
+    <div class="logo" style="font-size: 30px; text-align: center;">
+      <span class="l-azul">SIGEP</span>
+    </div>
+    <h1>Iniciar sesión</h1>
+    <p class="sub-login">Administración de proyectos civiles y eléctricos</p>
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% for categoria, mensaje in mensajes %}
+      <div class="aviso {{ 'aviso-error' if categoria == 'error' else 'aviso-ok' }}">
+        <span class="material-symbols-outlined">{{ 'error' if categoria == 'error' else 'check_circle' }}</span>
+        {{ mensaje }}
+      </div>
+      {% endfor %}
+    {% endwith %}
+
+    {% if sso_habilitado %}
+    <a class="boton boton-sso" href="{{ url_for('auth.login_sso') }}">
+      <span class="material-symbols-outlined">shield_lock</span>
+      Continuar con SSO corporativo
+    </a>
+    <p class="nota-login">Se abrirá la página de su proveedor de identidad<br>({{ issuer }})</p>
+    {% else %}
+    <div class="aviso aviso-ok" style="font-weight: 400">
+      <span class="material-symbols-outlined">code</span>
+      SSO sin configurar: acceso local de desarrollo que simula el inicio de
+      sesión. Configure las variables GP_OIDC_* para activar el SSO real.
+    </div>
+    <form method="post" action="{{ url_for('auth.login_dev') }}">
+      <div class="campo">
+        <label for="correo">Correo corporativo</label>
+        <input id="correo" type="email" name="correo" placeholder="usuario@constructora.mx"
+               value="admin@constructora.mx" required>
+      </div>
+      <div class="campo" style="margin-top: 10px">
+        <label for="nombre">Nombre (solo si es un usuario nuevo)</label>
+        <input id="nombre" name="nombre" maxlength="150" placeholder="Nombre Apellido">
+      </div>
+      <button class="boton boton-sso" type="submit" style="margin-top: 16px">
+        <span class="material-symbols-outlined">login</span> Entrar (modo desarrollo)
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</body>
+</html>
