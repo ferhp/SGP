@@ -276,7 +276,11 @@
             suggestedMax: 100,
             title: { display: true, text: '% del presupuesto',
                      color: '#898781' },
-            ticks: { color: '#898781' },
+            ticks: {
+              color: '#898781',
+              stepSize: 10,
+              callback: function (valor) { return valor + ' %'; }
+            },
             grid: { color: '#e1e0d9' }
           },
           x: {
