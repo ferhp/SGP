@@ -36,6 +36,7 @@
           {% if not p.costos %}
           <form method="post" action="{{ url_for('costos.proveedor_eliminar', id=p.id) }}" style="display:inline"
                 onsubmit="return confirm('¿Eliminar al proveedor {{ p.nombre }}?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="boton boton-peligro boton-chico" type="submit">Eliminar</button>
           </form>
           {% endif %}

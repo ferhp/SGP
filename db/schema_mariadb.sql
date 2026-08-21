@@ -6,9 +6,14 @@ CREATE DATABASE IF NOT EXISTS gestion_proyectos
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_spanish_ci;
 
--- Usuario de la aplicación (cambiar la contraseña en producción):
-CREATE USER IF NOT EXISTS 'gestion'@'%' IDENTIFIED BY 'gestion123';
-GRANT ALL PRIVILEGES ON gestion_proyectos.* TO 'gestion'@'%';
+-- Usuario de la aplicación. SUSTITUYA LA CONTRASEÑA por la misma que ponga
+-- en GP_DB_PASSWORD; el host 'localhost' limita las conexiones al propio
+-- servidor (ajústelo si la app corre en otra máquina, evitando '%').
+-- Los privilegios son solo los que la app necesita: DML y los DDL de sus
+-- migraciones automáticas (CREATE/ALTER/INDEX/REFERENCES); sin GRANT ALL.
+CREATE USER IF NOT EXISTS 'gestion'@'localhost' IDENTIFIED BY 'CAMBIAR_ESTA_CONTRASENA';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
+  ON gestion_proyectos.* TO 'gestion'@'localhost';
 FLUSH PRIVILEGES;
 
 USE gestion_proyectos;

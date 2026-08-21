@@ -27,6 +27,7 @@
   <h2><span class="material-symbols-outlined" style="color:var(--azul)">edit_note</span>
       Captura rápida de costo</h2>
   <form method="post" action="{{ url_for('costos.nuevo') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-rejilla" style="grid-template-columns: repeat(3, 1fr);">
       <div class="campo">
         <label for="cr-proyecto">Proyecto *</label>

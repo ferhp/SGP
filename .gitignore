@@ -1,0 +1,6 @@
+# Datos locales de la aplicación (BD SQLite de desarrollo y facturas adjuntas).
+App_Data/
+
+# Artefactos de Python.
+__pycache__/
+*.pyc

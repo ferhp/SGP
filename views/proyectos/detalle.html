@@ -127,6 +127,7 @@
         <td class="num">{{ e.salario_diario | moneda }}</td>
         <td>
           <form method="post" action="{{ url_for('proyectos.liberar_empleado', id=proyecto.id, empleado_id=e.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="boton boton-secundario boton-chico" type="submit">Liberar</button>
           </form>
         </td>
@@ -139,6 +140,7 @@
   {% if empleados_disponibles %}
   <form method="post" action="{{ url_for('proyectos.asignar_empleado', id=proyecto.id) }}"
         class="filtros" style="margin-top:14px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <select name="empleado_id" required>
       <option value="">Asignar empleado disponible…</option>
       {% for e in empleados_disponibles %}

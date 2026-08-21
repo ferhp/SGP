@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 import config
 from exportar import moneda, respuesta_exportacion
 from models import db_session
+from models.auditoria import registrar
 from models.contabilidad import CUENTAS, TIPOS_MOVIMIENTO, MovimientoContable
 from models.proyecto import Proyecto
 
@@ -32,6 +33,18 @@ def _eliminar_factura(mov, tipo):
             os.remove(ruta)
 
 
+def _contenido_valido(archivo, tipo) -> bool:
+    """Comprueba los primeros bytes del adjunto: la extensión sola no
+    garantiza el contenido (un ejecutable renombrado a .pdf pasaría)."""
+    inicio = archivo.stream.read(2048)
+    archivo.stream.seek(0)
+    if tipo == "pdf":
+        return inicio.startswith(b"%PDF-")
+    # XML: acepta BOM y espacios iniciales; debe abrir con "<".
+    texto = inicio.lstrip(b"\xef\xbb\xbf\xff\xfe\x00 \t\r\n")
+    return texto.startswith(b"<")
+
+
 def _guardar_facturas(mov, archivos):
     """Guarda los adjuntos XML/PDF del formulario. Regresa error o None.
 
@@ -47,6 +60,9 @@ def _guardar_facturas(mov, archivos):
         if not nombre.lower().endswith(extension):
             return (f"El archivo de la factura {tipo.upper()} debe tener "
                     f"extensión {extension}.")
+        if not _contenido_valido(archivo, tipo):
+            return (f"El archivo de la factura {tipo.upper()} no parece un "
+                    f"{tipo.upper()} válido.")
         _eliminar_factura(mov, tipo)
         guardado = f"mov{mov.id}_{nombre}"
         archivo.save(_ruta_factura(guardado))
@@ -196,9 +212,12 @@ def factura(id, tipo):
 def eliminar(id):
     mov = db_session.get(MovimientoContable, id)
     if mov:
+        detalle = (f"movimiento {mov.id}: {mov.tipo} {mov.cuenta} "
+                   f"${mov.monto} — {mov.concepto}")
         _eliminar_factura(mov, "xml")
         _eliminar_factura(mov, "pdf")
         db_session.delete(mov)
         db_session.commit()
+        registrar("contabilidad.eliminacion", detalle)
         flash("Movimiento eliminado.", "ok")
     return redirect(url_for("contabilidad.lista"))

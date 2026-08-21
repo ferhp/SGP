@@ -64,6 +64,7 @@
         <td>
           <form method="post" action="{{ url_for('nomina.eliminar', id=r.id) }}"
                 onsubmit="return confirm('¿Eliminar este recibo?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="boton boton-peligro boton-chico" type="submit">Eliminar</button>
           </form>
         </td>

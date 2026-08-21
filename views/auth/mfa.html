@@ -27,6 +27,7 @@
     {% endwith %}
 
     <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="campo">
         <label for="codigo">Código de 6 dígitos de su aplicación de autenticación</label>
         <input id="codigo" name="codigo" inputmode="numeric" pattern="[0-9 ]*"

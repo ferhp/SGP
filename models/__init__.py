@@ -31,6 +31,14 @@ def _crear_engine():
             pass
         return engine
     except Exception as exc:  # servidor apagado, credenciales, red, etc.
+        if not config.MODO_DEV:
+            # En producción una BD caída debe detener el arranque: degradarse
+            # en silencio a un archivo local enmascara la falla y deja los
+            # datos fuera de los controles del servidor de base de datos.
+            raise RuntimeError(
+                f"MariaDB no disponible ({exc.__class__.__name__}) y la app no "
+                "está en modo desarrollo; corrija la conexión (GP_DB_*)."
+            ) from exc
         MOTOR_ACTIVO = "SQLite (respaldo de desarrollo)"
         print(f"[AVISO] MariaDB no disponible ({exc.__class__.__name__}); "
               f"usando respaldo SQLite en App_Data.")
@@ -49,6 +57,7 @@ from models.contabilidad import MovimientoContable  # noqa: E402,F401
 from models.nomina import ReciboNomina          # noqa: E402,F401
 from models.proveedor import Proveedor          # noqa: E402,F401
 from models.usuario import Usuario              # noqa: E402,F401
+from models.auditoria import Auditoria          # noqa: E402,F401
 
 
 def init_db():

@@ -8,6 +8,7 @@
 
 <div class="tarjeta formulario">
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% with es_nuevo = false %}{% include "usuarios/_campos.html" %}{% endwith %}
     <div class="acciones-form">
       <button class="boton" type="submit"><span class="material-symbols-outlined">save</span> Guardar</button>

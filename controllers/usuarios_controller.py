@@ -7,6 +7,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 
 from exportar import respuesta_exportacion
 from models import db_session
+from models.auditoria import registrar
 from models.usuario import DEPARTAMENTOS_USUARIO, GENEROS, ROLES, Usuario
 
 bp = Blueprint("usuarios", __name__, url_prefix="/usuarios")
@@ -88,6 +89,9 @@ def nuevo():
             usuario.sub = f"pre|{usuario.correo}"
             db_session.add(usuario)
             db_session.commit()
+            registrar("usuarios.alta",
+                      f"{usuario.correo} rol={usuario.rol} "
+                      f"departamento={usuario.departamento}")
             flash(f"Usuario {usuario.nombre_completo} agregado; quedará vinculado "
                   "a su cuenta SSO en su primer inicio de sesión.", "ok")
             return redirect(url_for("usuarios.lista"))
@@ -113,13 +117,21 @@ def editar(id):
                 db_session.rollback()
                 flash(error, "error")
             else:
-                if request.form.get("restablecer_mfa") == "on" and usuario.mfa_habilitado:
+                mfa_restablecido = (request.form.get("restablecer_mfa") == "on"
+                                    and usuario.mfa_habilitado)
+                if mfa_restablecido:
                     # Para cuando el usuario pierde su dispositivo: podrá entrar
                     # de nuevo solo con el SSO y volver a configurar su MFA.
                     usuario.mfa_habilitado = False
                     usuario.mfa_secreto = None
                     flash(f"MFA de {usuario.nombre_completo} restablecido.", "ok")
                 db_session.commit()
+                registrar("usuarios.edicion",
+                          f"{usuario.correo} rol={usuario.rol} "
+                          f"departamento={usuario.departamento} "
+                          f"activo={usuario.activo} "
+                          f"captura_costos={usuario.captura_costos}"
+                          + (" mfa_restablecido" if mfa_restablecido else ""))
                 flash(f"Usuario {usuario.nombre_completo} actualizado.", "ok")
                 return redirect(url_for("usuarios.lista"))
     return render_template("usuarios/form.html", usuario=usuario,
@@ -130,6 +142,9 @@ def editar(id):
 @bp.route("/exportar/<formato>")
 def exportar(formato):
     usuarios = db_session.query(Usuario).order_by(Usuario.nombre).all()
+    registrar("usuarios.exportacion",
+              f"formato={formato} registros={len(usuarios)} (incluye datos "
+              "personales: NSS, CURP, RFC, dirección)")
     columnas = ("ID", "Nombre", "Apellido paterno", "Apellido materno", "Correo",
                 "NSS", "CURP", "RFC", "Dirección", "Teléfono",
                 "Fecha de nacimiento", "Género", "Fecha de ingreso", "Puesto",

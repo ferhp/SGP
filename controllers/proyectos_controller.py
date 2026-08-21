@@ -8,6 +8,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from exportar import moneda, respuesta_exportacion
 from models import db_session
+from models.auditoria import registrar
 from models.empleado import Empleado
 from models.nomina import ReciboNomina
 from models.proyecto import ESTADOS, TIPOS, Proyecto
@@ -221,10 +222,12 @@ def editar(id):
 def eliminar(id):
     proyecto = db_session.get(Proyecto, id)
     if proyecto:
+        detalle = f"{proyecto.clave} — {proyecto.nombre}"
         for empleado in proyecto.empleados:
             empleado.proyecto_id = None
         db_session.delete(proyecto)
         db_session.commit()
+        registrar("proyectos.eliminacion", detalle)
         flash(f"Proyecto {proyecto.clave} eliminado.", "ok")
     return redirect(url_for("proyectos.lista"))
 

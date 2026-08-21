@@ -54,9 +54,11 @@ Variables de entorno:
 
 En el IdP registre la URL de redirección: `http://<host>:5090/callback`.
 
-> **Modo desarrollo:** si las variables `GP_OIDC_*` no están configuradas, la
+> **Modo desarrollo:** con `GP_MODO_DEV=1` y sin las variables `GP_OIDC_*`, la
 > app muestra un acceso local que simula el SSO (basta un correo). La cuenta
-> inicial `admin@constructora.mx` tiene rol Admin.
+> inicial `admin@constructora.mx` tiene rol Admin. Sin `GP_MODO_DEV`, la app
+> exige la configuración completa (SSO, `GP_SECRET_KEY`, `GP_DB_PASSWORD`) y
+> se niega a arrancar si falta algo.
 
 ### MFA (verificación en dos pasos)
 
@@ -96,8 +98,25 @@ de entorno: `GP_DB_HOST`, `GP_DB_PORT`, `GP_DB_USER`, `GP_DB_PASSWORD`,
 ```bash
 cd GestionProyectos
 pip install -r requirements.txt
-python app.py           # http://127.0.0.1:5090
+GP_MODO_DEV=1 python app.py   # http://127.0.0.1:5090 (desarrollo local)
 ```
+
+En Windows (PowerShell): `$env:GP_MODO_DEV = "1"; python app.py`.
+
+En producción **no** defina `GP_MODO_DEV`. La app entonces exige
+`GP_SECRET_KEY` (clave aleatoria de al menos 32 bytes), `GP_DB_PASSWORD`,
+las variables `GP_OIDC_*`, sirve con **waitress** (WSGI) en lugar del
+servidor de desarrollo de Flask, marca las cookies como `Secure` (requiere
+HTTPS, p. ej. detrás de un proxy TLS) y no permite el respaldo SQLite ni el
+acceso local de desarrollo. Variables adicionales: `GP_SESION_HORAS`
+(caducidad de la sesión, por defecto 8), `GP_COOKIES_SEGURAS` (fuerza cookies
+seguras también en desarrollo) y `GP_OIDC_CONFIAR_CORREO` (permite vincular
+cuentas por correo cuando el IdP verifica los correos pero no envía el claim
+`email_verified`).
+
+Las acciones sensibles (altas/cambios de usuarios, restablecimiento de MFA,
+eliminaciones y exportaciones con datos personales) quedan en la tabla
+`auditorias`.
 
 > En esta máquina hay un Python embebido en `_tools/python` y el wrapper
 > `_tools/rungp.cmd` que arranca la app restaurando las variables de entorno
