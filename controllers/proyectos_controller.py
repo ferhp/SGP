@@ -16,26 +16,23 @@ from models.proyecto import ESTADOS, TIPOS, Proyecto
 bp = Blueprint("proyectos", __name__, url_prefix="/proyectos")
 
 # Colores de las series de la gráfica del proyecto (trío categórico seguro
-# para daltonismo, tonos Okabe-Ito): presupuesto programado en azul, costo
-# acumulado en naranja e ingresos en verde azulado.
+# para daltonismo, tonos Okabe-Ito): presupuesto en azul, costo acumulado
+# en naranja e ingresos en verde azulado.
 COLOR_PRESUPUESTO = "#2a78d6"
 COLOR_COSTO = "#eb6834"
 COLOR_INGRESOS = "#009e73"
-
-# Pendiente de la curva S logística (presupuesto programado).
-_K_LOGISTICA = 10.0
 
 _MESES_CORTOS = ("ene", "feb", "mar", "abr", "may", "jun",
                  "jul", "ago", "sep", "oct", "nov", "dic")
 
 
 def _curva_s(proyecto):
-    """Series de la curva S del proyecto, ambas en % del presupuesto.
+    """Series de la curva S del proyecto, todas en % del presupuesto.
 
     El eje X son las semanas del proyecto con su fecha, del inicio al término
     previsto (u hoy si no hay término). Sobre esas fechas:
-    - Presupuesto (programado): curva S logística de 0 a 100 % del presupuesto,
-      normalizada para tocar ambos extremos.
+    - Presupuesto: el costo total autorizado del proyecto, como referencia
+      constante al 100 % (la gráfica la dibuja punteada).
     - Costo acumulado (real): suma acumulada de los costos registrados a cada
       fecha, como % del presupuesto; solo hasta hoy (sin puntos futuros).
     - Ingresos (real): suma acumulada de los movimientos contables de tipo
@@ -47,13 +44,6 @@ def _curva_s(proyecto):
         fin = inicio + timedelta(days=7)
     semanas = max(1, math.ceil((fin - inicio).days / 7))
     fechas = [min(inicio + timedelta(days=7 * i), fin) for i in range(semanas + 1)]
-
-    def logistica(t):
-        return 1 / (1 + math.exp(-_K_LOGISTICA * (t - 0.5)))
-
-    f0, f1 = logistica(0.0), logistica(1.0)
-    plan = [round(100 * (logistica(i / semanas) - f0) / (f1 - f0), 1)
-            for i in range(semanas + 1)]
 
     presupuesto = float(proyecto.presupuesto or 0)
     costo = float(proyecto.costo_total)
@@ -89,7 +79,6 @@ def _curva_s(proyecto):
         "etiquetas": [f"{f.day:02d} {_MESES_CORTOS[f.month - 1]}" for f in fechas],
         "titulos": [f"Semana {i} · {f.day:02d} {_MESES_CORTOS[f.month - 1]} {f.year}"
                     for i, f in enumerate(fechas)],
-        "plan": plan,
         "reales": reales,
         "ingresos_serie": serie_ingresos,
         "presupuesto": presupuesto,

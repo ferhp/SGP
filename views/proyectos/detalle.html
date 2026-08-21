@@ -20,7 +20,7 @@
 {% endif %}
 
 <div class="tarjeta">
-  <h2>Curva S — presupuesto programado vs. costo acumulado</h2>
+  <h2>Curva S — costo acumulado e ingresos vs. presupuesto</h2>
   <div class="filtros" style="margin-bottom:12px">
     <span class="chip chip-azul">Avance actual: {{ proyecto.avance }} %</span>
     <span class="chip chip-verde">Presupuesto: {{ proyecto.presupuesto | moneda }}</span>
@@ -32,9 +32,9 @@
   <p style="color:var(--texto-suave); margin:0 0 10px; font-size:12.5px">
     Eje X: semanas del proyecto ({{ proyecto.fecha_inicio }} →
     {{ proyecto.fecha_fin_prevista or 'hoy' }}). Eje Y: % del presupuesto.
-    El presupuesto programado sigue una curva S (arranque y cierre suaves);
-    el costo acumulado y los ingresos son los montos reales registrados a
-    cada fecha, hasta hoy.
+    La línea punteada al 100 % es el presupuesto total del proyecto; el costo
+    acumulado y los ingresos son los montos reales registrados a cada fecha,
+    hasta hoy.
   </p>
   <div style="height:240px"><canvas id="grafica-avance"></canvas></div>
 </div>
@@ -191,17 +191,15 @@
     }
 
     var conjuntos = [{
-      label: 'Presupuesto programado — ' + pesos(serie.presupuesto),
-      data: serie.plan,
+      label: 'Presupuesto (100 %) — ' + pesos(serie.presupuesto),
+      data: serie.etiquetas.map(function () { return 100; }),
       borderColor: serie.color_plan,
       backgroundColor: serie.color_plan,
       borderWidth: 2,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-      pointBorderColor: '#fcfcfb',
-      pointBorderWidth: 1,
-      tension: 0.35,
-      clase: 'plan'
+      borderDash: [6, 5],
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      clase: 'presupuesto'
     }];
     if (serie.reales) {
       conjuntos.push({
@@ -266,8 +264,8 @@
                   return ' Ingresos acumulados: ' + pct + ' % (' +
                          pesos(monto) + ')';
                 }
-                return ' Presupuesto programado: ' + pct + ' % (' +
-                       pesos(monto) + ')';
+                return ' Presupuesto total del proyecto: ' +
+                       pesos(serie.presupuesto);
               }
             }
           }
