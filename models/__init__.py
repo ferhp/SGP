@@ -109,6 +109,9 @@ def _migrar_columnas():
     from sqlalchemy import inspect, text
     inspector = inspect(engine)
     pendientes = {
+        "proyectos": {
+            "numero_contrato": "ALTER TABLE proyectos ADD COLUMN numero_contrato VARCHAR(50) DEFAULT ''",
+        },
         "usuarios": {
             "captura_costos": "ALTER TABLE usuarios ADD COLUMN captura_costos BOOLEAN DEFAULT 0",
             "mfa_habilitado": "ALTER TABLE usuarios ADD COLUMN mfa_habilitado BOOLEAN DEFAULT 0",

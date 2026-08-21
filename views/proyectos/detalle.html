@@ -10,7 +10,9 @@
     <span class="chip {{ 'chip-amarillo' if proyecto.tipo == 'Eléctrico' else 'chip-azul' }}">{{ proyecto.tipo }}</span>
     {% set color = {'En curso':'chip-verde','Planeación':'chip-azul','Suspendido':'chip-rojo','Terminado':'chip-gris'} %}
     <span class="chip {{ color.get(proyecto.estado, 'chip-gris') }}">{{ proyecto.estado }}</span>
-    &nbsp; {{ proyecto.cliente }} · {{ proyecto.ubicacion }} ·
+    &nbsp; {{ proyecto.cliente }}
+    {%- if proyecto.numero_contrato %} · Contrato {{ proyecto.numero_contrato }}{% endif %}
+    · {{ proyecto.ubicacion }} ·
     {{ proyecto.fecha_inicio }} → {{ proyecto.fecha_fin_prevista or 'sin fecha de término' }}
   </p>
 </div>

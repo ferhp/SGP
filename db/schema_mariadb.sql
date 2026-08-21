@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS proyectos (
   nombre VARCHAR(150) NOT NULL,
   tipo ENUM('Civil', 'Eléctrico') NOT NULL,
   cliente VARCHAR(150) NOT NULL,
+  numero_contrato VARCHAR(50) DEFAULT '',
   ubicacion VARCHAR(200),
   descripcion TEXT,
   fecha_inicio DATE NOT NULL,

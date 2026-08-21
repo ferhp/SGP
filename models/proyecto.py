@@ -18,6 +18,7 @@ class Proyecto(Base):
     nombre: Mapped[str] = mapped_column(String(150), nullable=False)
     tipo: Mapped[str] = mapped_column(Enum(*TIPOS, name="tipo_proyecto"), nullable=False)
     cliente: Mapped[str] = mapped_column(String(150), nullable=False)
+    numero_contrato: Mapped[str] = mapped_column(String(50), default="")
     ubicacion: Mapped[str] = mapped_column(String(200), default="")
     descripcion: Mapped[str] = mapped_column(Text, default="")
     fecha_inicio: Mapped[date] = mapped_column(Date, nullable=False)

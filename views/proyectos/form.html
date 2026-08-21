@@ -30,6 +30,12 @@
         <input id="cliente" name="cliente" value="{{ proyecto.cliente or '' }}" maxlength="150" required>
       </div>
       <div class="campo">
+        <label for="numero_contrato">Número de contrato</label>
+        <input id="numero_contrato" name="numero_contrato"
+               value="{{ proyecto.numero_contrato or '' }}" maxlength="50"
+               placeholder="CT-2026-001">
+      </div>
+      <div class="campo">
         <label for="ubicacion">Ubicación</label>
         <input id="ubicacion" name="ubicacion" value="{{ proyecto.ubicacion or '' }}" maxlength="200">
       </div>

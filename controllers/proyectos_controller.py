@@ -102,6 +102,7 @@ def _cargar_form(proyecto: Proyecto, form) -> str | None:
     proyecto.nombre = (form.get("nombre") or "").strip()
     proyecto.tipo = form.get("tipo") or ""
     proyecto.cliente = (form.get("cliente") or "").strip()
+    proyecto.numero_contrato = (form.get("numero_contrato") or "").strip()
     proyecto.ubicacion = (form.get("ubicacion") or "").strip()
     proyecto.descripcion = (form.get("descripcion") or "").strip()
     proyecto.estado = form.get("estado") or "Planeación"
@@ -151,13 +152,13 @@ def exportar(formato):
         titulo += f" · {filtro_tipo}"
     if filtro_estado:
         titulo += f" · {filtro_estado}"
-    columnas = ("Clave", "Nombre", "Tipo", "Cliente", "Ubicación", "Inicio",
-                "Término previsto", "Estado", "Avance", "Presupuesto",
+    columnas = ("Clave", "Nombre", "Tipo", "Cliente", "Contrato", "Ubicación",
+                "Inicio", "Término previsto", "Estado", "Avance", "Presupuesto",
                 "Costo acumulado", "Ingresos", "Egresos")
-    filas = [(p.clave, p.nombre, p.tipo, p.cliente, p.ubicacion,
-              str(p.fecha_inicio), str(p.fecha_fin_prevista or "—"), p.estado,
-              f"{p.avance} %", moneda(p.presupuesto), moneda(p.costo_total),
-              moneda(p.ingresos), moneda(p.egresos))
+    filas = [(p.clave, p.nombre, p.tipo, p.cliente, p.numero_contrato or "—",
+              p.ubicacion, str(p.fecha_inicio), str(p.fecha_fin_prevista or "—"),
+              p.estado, f"{p.avance} %", moneda(p.presupuesto),
+              moneda(p.costo_total), moneda(p.ingresos), moneda(p.egresos))
              for p in proyectos]
     return respuesta_exportacion(formato, "proyectos", titulo, columnas, filas)
 
