@@ -46,6 +46,7 @@
     </div>
 
     <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="campo">
         <label for="codigo">3. Escriba el código de 6 dígitos que muestra la app</label>
         <input id="codigo" name="codigo" inputmode="numeric" pattern="[0-9 ]*"

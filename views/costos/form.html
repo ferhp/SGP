@@ -7,6 +7,7 @@
 
 <div class="tarjeta formulario">
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-rejilla">
       <div class="campo campo-ancho">
         <label for="proyecto_id">Proyecto *</label>
@@ -65,6 +66,7 @@
 {% if not es_nuevo %}
 <form method="post" action="{{ url_for('costos.eliminar', id=costo.id) }}"
       onsubmit="return confirm('¿Eliminar este costo?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="boton boton-peligro" type="submit">
     <span class="material-symbols-outlined">delete</span> Eliminar costo
   </button>

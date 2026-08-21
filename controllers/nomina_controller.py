@@ -7,6 +7,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from exportar import moneda, respuesta_exportacion
 from models import db_session
+from models.auditoria import registrar
 from models.empleado import Empleado
 from models.nomina import ReciboNomina
 
@@ -128,7 +129,9 @@ def generar():
 def eliminar(id):
     recibo = db_session.get(ReciboNomina, id)
     if recibo:
+        detalle = f"recibo {recibo.id}, periodo {recibo.periodo}"
         db_session.delete(recibo)
         db_session.commit()
+        registrar("nomina.eliminacion", detalle)
         flash("Recibo eliminado.", "ok")
     return redirect(url_for("nomina.lista"))

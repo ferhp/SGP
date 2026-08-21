@@ -8,6 +8,7 @@
 # Autenticación: SSO por OpenID Connect (controllers/auth_controller.py).
 import os
 import sys
+from datetime import timedelta
 
 # Garantiza que el paquete de la app sea importable aunque el intérprete
 # corra en modo aislado (p. ej. la distribución embebida de Python).
@@ -15,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import (Flask, flash, g, redirect, render_template, request,
                    session, url_for)
+from flask_wtf import CSRFProtect
 
 import config
 import models
@@ -43,6 +45,15 @@ def crear_app() -> Flask:
     app.secret_key = config.SECRET_KEY
     # Tamaño máximo de las cargas (facturas XML/PDF adjuntas).
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+    # Cookies de sesión: HttpOnly (por defecto), SameSite y Secure (tras TLS);
+    # la sesión caduca sola tras GP_SESION_HORAS.
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = config.COOKIES_SEGURAS
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=config.SESION_HORAS)
+
+    # Token CSRF obligatorio en todos los POST (los formularios lo incluyen
+    # como campo oculto csrf_token).
+    CSRFProtect(app)
 
     models.init_db()
     from seed import sembrar_si_vacio
@@ -156,10 +167,43 @@ def crear_app() -> Flask:
     def no_encontrado(_):
         return render_template("404.html"), 404
 
+    # ---- Cabeceras de seguridad ---------------------------------------------
+    # 'unsafe-inline' en script-src cubre el script y los manejadores en línea
+    # de layout.html; retirarlo requiere mover ese código a un archivo estático.
+    _CSP = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' https://fonts.googleapis.com; "
+        "font-src https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "frame-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none'"
+    )
+
+    @app.after_request
+    def cabeceras_seguridad(respuesta):
+        respuesta.headers.setdefault("Content-Security-Policy", _CSP)
+        respuesta.headers.setdefault("X-Content-Type-Options", "nosniff")
+        respuesta.headers.setdefault("X-Frame-Options", "DENY")
+        respuesta.headers.setdefault("Referrer-Policy", "same-origin")
+        if config.COOKIES_SEGURAS:
+            respuesta.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        return respuesta
+
     return app
 
 
 app = crear_app()
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5090, debug=False)
+    if config.MODO_DEV:
+        app.run(host="127.0.0.1", port=5090, debug=False)
+    else:
+        # Servidor WSGI apto para producción (el de Flask es solo de desarrollo).
+        from waitress import serve
+        serve(app, host="127.0.0.1", port=5090)

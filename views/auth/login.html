@@ -32,13 +32,14 @@
       Continuar con SSO corporativo
     </a>
     <p class="nota-login">Se abrirá la página de su proveedor de identidad<br>({{ issuer }})</p>
-    {% else %}
+    {% elif dev_login %}
     <div class="aviso aviso-ok" style="font-weight: 400">
       <span class="material-symbols-outlined">code</span>
       SSO sin configurar: acceso local de desarrollo que simula el inicio de
       sesión. Configure las variables GP_OIDC_* para activar el SSO real.
     </div>
     <form method="post" action="{{ url_for('auth.login_dev') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="campo">
         <label for="correo">Correo corporativo</label>
         <input id="correo" type="email" name="correo" placeholder="usuario@constructora.mx"
@@ -52,6 +53,11 @@
         <span class="material-symbols-outlined">login</span> Entrar (modo desarrollo)
       </button>
     </form>
+    {% else %}
+    <div class="aviso aviso-error">
+      <span class="material-symbols-outlined">error</span>
+      No hay ningún método de acceso configurado; contacte al administrador.
+    </div>
     {% endif %}
   </div>
 </body>

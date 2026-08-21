@@ -19,6 +19,7 @@ from flask import (Blueprint, flash, g, redirect, render_template, request,
                    session, url_for)
 
 import config
+import seguridad
 from models import db_session
 from models.usuario import DEPARTAMENTOS_USUARIO, Usuario
 
@@ -44,23 +45,31 @@ def init_oauth(app):
     )
 
 
-def _autenticar(sub: str, correo: str, nombre: str):
-    """Da de alta o actualiza al usuario. Regresa (usuario, error)."""
+def _autenticar(sub: str, correo: str, nombre: str, correo_verificado: bool = True):
+    """Da de alta o actualiza al usuario. Regresa (usuario, error).
+
+    La cuenta se identifica primero por `sub` (identificador estable del IdP).
+    El correo solo sirve para vincular cuentas pre-registradas y únicamente
+    cuando el IdP afirma haberlo verificado: un correo sin verificar podría
+    pertenecer a otra persona y permitiría apropiarse de su cuenta y rol.
+    """
     correo = (correo or "").strip().lower()
     if not correo:
         return None, "El proveedor de identidad no entregó un correo electrónico."
-    usuario = (
-        db_session.query(Usuario)
-        .filter((Usuario.sub == sub) | (Usuario.correo == correo))
-        .first()
-    )
+    usuario = db_session.query(Usuario).filter(Usuario.sub == sub).first()
+    if not usuario:
+        existente = db_session.query(Usuario).filter(Usuario.correo == correo).first()
+        if existente and not correo_verificado:
+            return None, ("El proveedor de identidad no verificó el correo "
+                          "electrónico; no es posible vincular la cuenta.")
+        usuario = existente
     if not usuario:
         depto = (config.DEPARTAMENTO_NUEVOS
                  if config.DEPARTAMENTO_NUEVOS in DEPARTAMENTOS_USUARIO
                  else "Proyectos")
         usuario = Usuario(sub=sub, correo=correo, nombre=nombre or correo,
                           departamento=depto, activo=True)
-        if correo in config.ADMIN_CORREOS:
+        if correo_verificado and correo in config.ADMIN_CORREOS:
             usuario.rol = "Admin"
             usuario.departamento = "Dirección"
         db_session.add(usuario)
@@ -70,7 +79,7 @@ def _autenticar(sub: str, correo: str, nombre: str):
             usuario.nombre = nombre
     if not usuario.activo:
         db_session.rollback()
-        return None, "Su cuenta está desactivada; contacte al administrador."
+        return None, "No es posible iniciar sesión con esta cuenta; contacte al administrador."
     db_session.commit()
     return usuario, None
 
@@ -79,6 +88,7 @@ def _abrir_sesion(usuario: Usuario):
     usuario.ultimo_acceso = datetime.now()
     db_session.commit()
     session.clear()
+    session.permanent = True  # aplica PERMANENT_SESSION_LIFETIME
     session["usuario_id"] = usuario.id
 
 
@@ -97,7 +107,9 @@ def _continuar_login(usuario: Usuario):
     return redirect(url_for("dashboard.index"))
 
 
-def _verificar_totp(secreto: str, codigo: str) -> bool:
+def _verificar_totp(secreto_guardado: str, codigo: str) -> bool:
+    # El secreto se guarda cifrado en reposo (seguridad.cifrar_secreto).
+    secreto = seguridad.descifrar_secreto(secreto_guardado)
     codigo = (codigo or "").strip().replace(" ", "")
     if not secreto or not codigo.isdigit():
         return False
@@ -116,6 +128,7 @@ def login():
     if session.get("usuario_id"):
         return redirect(url_for("dashboard.index"))
     return render_template("auth/login.html", sso_habilitado=config.OIDC_HABILITADO,
+                           dev_login=config.DEV_LOGIN_HABILITADO,
                            issuer=config.OIDC_ISSUER)
 
 
@@ -146,8 +159,12 @@ def callback():
             userinfo = {}
     usuario, error = _autenticar(
         sub=str(userinfo.get("sub", "")),
-        correo=userinfo.get("email") or userinfo.get("preferred_username") or "",
+        correo=userinfo.get("email") or "",
         nombre=userinfo.get("name") or "",
+        # Solo se vincula por correo si el IdP lo declara verificado (o el
+        # operador confía explícitamente en su IdP vía GP_OIDC_CONFIAR_CORREO).
+        correo_verificado=bool(userinfo.get("email_verified"))
+        or config.OIDC_CONFIAR_CORREO,
     )
     if error:
         flash(error, "error")
@@ -157,18 +174,27 @@ def callback():
 
 @bp.route("/login/dev", methods=["POST"])
 def login_dev():
-    # Acceso local que simula el SSO; solo existe cuando no hay IdP configurado.
-    if config.OIDC_HABILITADO:
+    # Acceso local que simula el SSO; solo existe en modo desarrollo explícito
+    # (GP_MODO_DEV=1) y sin IdP configurado.
+    if not config.DEV_LOGIN_HABILITADO:
+        return redirect(url_for("auth.login"))
+    clave_ip = f"dev:{request.remote_addr}"
+    espera = seguridad.segundos_bloqueado(clave_ip)
+    if espera:
+        flash(f"Demasiados intentos; espere {espera // 60 + 1} minuto(s).", "error")
         return redirect(url_for("auth.login"))
     correo = (request.form.get("correo") or "").strip().lower()
     nombre = (request.form.get("nombre") or "").strip()
     if not correo or "@" not in correo:
+        seguridad.registrar_fallo(clave_ip)
         flash("Escriba un correo electrónico válido.", "error")
         return redirect(url_for("auth.login"))
     usuario, error = _autenticar(sub=f"dev|{correo}", correo=correo, nombre=nombre)
     if error:
+        seguridad.registrar_fallo(clave_ip)
         flash(error, "error")
         return redirect(url_for("auth.login"))
+    seguridad.limpiar_intentos(clave_ip)
     return _continuar_login(usuario)
 
 
@@ -180,11 +206,19 @@ def mfa():
     if not usuario or not usuario.mfa_habilitado or not usuario.mfa_secreto:
         return redirect(url_for("auth.login"))
     if request.method == "POST":
-        if _verificar_totp(usuario.mfa_secreto, request.form.get("codigo")):
+        clave = f"mfa:{usuario.id}"
+        espera = seguridad.segundos_bloqueado(clave)
+        if espera:
+            flash(f"Demasiados códigos incorrectos; espere "
+                  f"{espera // 60 + 1} minuto(s).", "error")
+        elif _verificar_totp(usuario.mfa_secreto, request.form.get("codigo")):
+            seguridad.limpiar_intentos(clave)
             session.pop("mfa_pendiente_id", None)
             _abrir_sesion(usuario)
             return redirect(url_for("dashboard.index"))
-        flash("Código incorrecto o vencido; intente de nuevo.", "error")
+        else:
+            seguridad.registrar_fallo(clave)
+            flash("Código incorrecto o vencido; intente de nuevo.", "error")
     return render_template("auth/mfa.html", correo=usuario.correo)
 
 
@@ -198,7 +232,7 @@ def mfa_activar():
     if request.method == "POST":
         secreto = session.get("mfa_secreto_tmp")
         if secreto and _verificar_totp(secreto, request.form.get("codigo")):
-            usuario.mfa_secreto = secreto
+            usuario.mfa_secreto = seguridad.cifrar_secreto(secreto)
             usuario.mfa_habilitado = True
             db_session.commit()
             session.pop("mfa_secreto_tmp", None)
@@ -228,7 +262,7 @@ def mfa_configurar():
         if accion == "activar" and not usuario.mfa_habilitado:
             secreto = session.get("mfa_secreto_tmp")
             if secreto and _verificar_totp(secreto, codigo):
-                usuario.mfa_secreto = secreto
+                usuario.mfa_secreto = seguridad.cifrar_secreto(secreto)
                 usuario.mfa_habilitado = True
                 db_session.commit()
                 session.pop("mfa_secreto_tmp", None)
@@ -236,13 +270,21 @@ def mfa_configurar():
                 return redirect(url_for("dashboard.index"))
             flash("Código incorrecto; escanee el QR y vuelva a intentar.", "error")
         elif accion == "desactivar" and usuario.mfa_habilitado:
-            if _verificar_totp(usuario.mfa_secreto, codigo):
+            clave = f"mfa:{usuario.id}"
+            espera = seguridad.segundos_bloqueado(clave)
+            if espera:
+                flash(f"Demasiados códigos incorrectos; espere "
+                      f"{espera // 60 + 1} minuto(s).", "error")
+            elif _verificar_totp(usuario.mfa_secreto, codigo):
+                seguridad.limpiar_intentos(clave)
                 usuario.mfa_habilitado = False
                 usuario.mfa_secreto = None
                 db_session.commit()
                 flash("Verificación en dos pasos desactivada.", "ok")
                 return redirect(url_for("auth.mfa_configurar"))
-            flash("Código incorrecto; no se desactivó el MFA.", "error")
+            else:
+                seguridad.registrar_fallo(clave)
+                flash("Código incorrecto; no se desactivó el MFA.", "error")
     qr = None
     secreto = None
     if not usuario.mfa_habilitado:

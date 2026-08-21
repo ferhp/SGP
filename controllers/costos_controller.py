@@ -8,6 +8,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 
 from exportar import moneda, respuesta_exportacion
 from models import db_session
+from models.auditoria import registrar
 from models.costo import CATEGORIAS, Costo
 from models.proveedor import Proveedor
 from models.proyecto import Proyecto
@@ -145,8 +146,10 @@ def proveedor_eliminar(id):
             flash(f"No se puede eliminar {proveedor.nombre}: tiene "
                   f"{len(proveedor.costos)} costos ligados.", "error")
             return redirect(url_for("costos.proveedores"))
+        nombre = proveedor.nombre
         db_session.delete(proveedor)
         db_session.commit()
+        registrar("proveedores.eliminacion", nombre)
         flash("Proveedor eliminado.", "ok")
     return redirect(url_for("costos.proveedores"))
 
@@ -238,7 +241,10 @@ def eliminar(id):
         return bloqueo
     costo = db_session.get(Costo, id)
     if costo:
+        detalle = (f"costo {costo.id}: {costo.categoria} ${costo.monto} — "
+                   f"{costo.concepto}")
         db_session.delete(costo)
         db_session.commit()
+        registrar("costos.eliminacion", detalle)
         flash("Costo eliminado.", "ok")
     return redirect(url_for("costos.lista"))

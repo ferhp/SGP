@@ -28,6 +28,7 @@
       {% if usuario_actual %}
         {% if puede_cambiar_departamento %}
         <form action="{{ url_for('cambiar_departamento') }}" method="post" class="selector-departamento">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <span class="material-symbols-outlined">badge</span>
           <select name="departamento" onchange="this.form.submit()" title="Vista por departamento">
             {% for dep in departamentos %}
@@ -58,6 +59,7 @@
             </a>
             {% endif %}
             <form action="{{ url_for('auth.logout') }}" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="boton boton-secundario boton-chico" type="submit">
                 <span class="material-symbols-outlined">logout</span> Cerrar sesión
               </button>

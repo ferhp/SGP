@@ -7,6 +7,7 @@
 
 <div class="tarjeta formulario">
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-rejilla">
       <div class="campo campo-ancho">
         <label for="nombre">Nombre o razón social *</label>

@@ -14,6 +14,7 @@
   <p style="color:var(--texto-suave)">Cada vez que inicie sesión se le pedirá el
   código de su aplicación de autenticación.</p>
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="accion" value="desactivar">
     <div class="campo" style="max-width:300px">
       <label for="codigo">Para desactivarla, escriba el código vigente</label>
@@ -45,6 +46,7 @@
     </p>
   </div>
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="accion" value="activar">
     <div class="campo" style="max-width:300px">
       <label for="codigo">3. Escriba el código de 6 dígitos que muestra la app</label>

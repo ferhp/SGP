@@ -10,6 +10,7 @@
 
 <div class="tarjeta formulario">
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% with es_nuevo = true %}{% include "usuarios/_campos.html" %}{% endwith %}
     <div class="acciones-form">
       <button class="boton" type="submit">
