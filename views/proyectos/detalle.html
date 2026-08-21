@@ -20,7 +20,7 @@
 {% endif %}
 
 <div class="tarjeta">
-  <h2>Curva de avance — proyección exponencial</h2>
+  <h2>Curva S — presupuesto programado vs. costo acumulado</h2>
   <div class="filtros" style="margin-bottom:12px">
     <span class="chip chip-azul">Avance actual: {{ proyecto.avance }} %</span>
     <span class="chip chip-verde">Presupuesto: {{ proyecto.presupuesto | moneda }}</span>
@@ -30,9 +30,10 @@
     <div style="width: {{ proyecto.avance }}%; height:10px"></div>
   </div>
   <p style="color:var(--texto-suave); margin:0 0 10px; font-size:12.5px">
-    Avance físico y costo acumulado (como % del presupuesto ejercido) por semana,
-    de {{ proyecto.fecha_inicio }} a {{ proyecto.fecha_fin_prevista or 'hoy' }};
-    la línea punteada al 100 % representa el presupuesto total.
+    Eje X: semanas del proyecto ({{ proyecto.fecha_inicio }} →
+    {{ proyecto.fecha_fin_prevista or 'hoy' }}). Eje Y: % del presupuesto.
+    El presupuesto programado sigue una curva S (arranque y cierre suaves);
+    el costo acumulado es el gasto real registrado a cada fecha, hasta hoy.
   </p>
   <div style="height:240px"><canvas id="grafica-avance"></canvas></div>
 </div>
@@ -176,10 +177,10 @@
   {% else %}<p style="color:var(--texto-suave)">Sin recibos de nómina para el personal de este proyecto.</p>{% endif %}
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
 <script>
   (function () {
-    var serie = {{ serie_avance | tojson }};
+    var serie = {{ curva_s | tojson }};
     var lienzo = document.getElementById('grafica-avance');
     if (!lienzo || !window.Chart) { return; }
 
@@ -189,22 +190,22 @@
     }
 
     var conjuntos = [{
-      label: 'Avance físico',
-      data: serie.datos,
-      borderColor: serie.color,
-      backgroundColor: serie.color,
+      label: 'Presupuesto programado — ' + pesos(serie.presupuesto),
+      data: serie.plan,
+      borderColor: serie.color_plan,
+      backgroundColor: serie.color_plan,
       borderWidth: 2,
       pointRadius: 4,
       pointHoverRadius: 6,
       pointBorderColor: '#fcfcfb',
       pointBorderWidth: 1,
       tension: 0.35,
-      clase: 'avance'
+      clase: 'plan'
     }];
-    if (serie.datos_costo) {
+    if (serie.reales) {
       conjuntos.push({
         label: 'Costo acumulado — ' + pesos(serie.costo),
-        data: serie.datos_costo,
+        data: serie.reales,
         borderColor: serie.color_costo,
         backgroundColor: serie.color_costo,
         borderWidth: 2,
@@ -214,17 +215,6 @@
         pointBorderWidth: 1,
         tension: 0.35,
         clase: 'costo'
-      });
-      conjuntos.push({
-        label: 'Presupuesto (100 %) — ' + pesos(serie.presupuesto),
-        data: serie.etiquetas.map(function () { return 100; }),
-        borderColor: '#e34948',
-        backgroundColor: '#e34948',
-        borderWidth: 2,
-        borderDash: [6, 5],
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        clase: 'presupuesto'
       });
     }
 
@@ -250,15 +240,13 @@
               },
               label: function (item) {
                 var pct = item.parsed.y;
+                var monto = serie.presupuesto * pct / 100;
                 if (item.dataset.clase === 'costo') {
-                  var monto = serie.presupuesto * pct / 100;
-                  return ' Costo acumulado: ' + pct + ' % del presupuesto (' +
+                  return ' Costo acumulado real: ' + pct + ' % (' +
                          pesos(monto) + ')';
                 }
-                if (item.dataset.clase === 'presupuesto') {
-                  return ' Presupuesto total: ' + pesos(serie.presupuesto);
-                }
-                return ' Avance físico proyectado: ' + pct + ' %';
+                return ' Presupuesto programado: ' + pct + ' % (' +
+                       pesos(monto) + ')';
               }
             }
           }
@@ -267,13 +255,13 @@
           y: {
             min: 0,
             suggestedMax: 100,
-            title: { display: true, text: '% (avance / presupuesto ejercido)',
+            title: { display: true, text: '% del presupuesto',
                      color: '#898781' },
             ticks: { color: '#898781' },
             grid: { color: '#e1e0d9' }
           },
           x: {
-            title: { display: true, text: 'Semana (fecha)', color: '#898781' },
+            title: { display: true, text: 'Fecha (semanas del proyecto)', color: '#898781' },
             ticks: { color: '#898781', autoSkip: true, maxTicksLimit: 14,
                      maxRotation: 45, minRotation: 0 },
             grid: { display: false }

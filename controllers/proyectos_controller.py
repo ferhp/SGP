@@ -16,27 +16,26 @@ from models.proyecto import ESTADOS, TIPOS, Proyecto
 bp = Blueprint("proyectos", __name__, url_prefix="/proyectos")
 
 # Colores de las series de la gráfica del proyecto (paleta categórica
-# validada): avance en azul, costo acumulado en naranja.
-COLOR_AVANCE = "#2a78d6"
+# validada): presupuesto programado en azul, costo acumulado en naranja.
+COLOR_PRESUPUESTO = "#2a78d6"
 COLOR_COSTO = "#eb6834"
 
-# Exponente de la curva de proyección exponencial del avance.
-_K_EXPONENCIAL = 3.0
+# Pendiente de la curva S logística (presupuesto programado).
+_K_LOGISTICA = 10.0
 
 _MESES_CORTOS = ("ene", "feb", "mar", "abr", "may", "jun",
                  "jul", "ago", "sep", "oct", "nov", "dic")
 
 
-def _serie_avance(proyecto):
-    """Series de la gráfica del proyecto, todas sobre un mismo eje (%).
+def _curva_s(proyecto):
+    """Series de la curva S del proyecto, ambas en % del presupuesto.
 
-    El eje X son las semanas del proyecto con su fecha, desde el inicio hasta
-    el término previsto (u hoy si no hay término). Sobre esas semanas:
-    - Avance físico: curva exponencial de 0 al avance actual,
-      y(t) = avance · (e^(k·t) − 1) / (e^k − 1), t normalizado 0..1.
-    - Costo acumulado: misma trayectoria hasta el % de presupuesto ejercido;
-      el valor en pesos viaja junto para mostrarse en tooltips y etiquetas.
-    - Presupuesto: referencia constante al 100 %.
+    El eje X son las semanas del proyecto con su fecha, del inicio al término
+    previsto (u hoy si no hay término). Sobre esas fechas:
+    - Presupuesto (programado): curva S logística de 0 a 100 % del presupuesto,
+      normalizada para tocar ambos extremos.
+    - Costo acumulado (real): suma acumulada de los costos registrados a cada
+      fecha, como % del presupuesto; solo hasta hoy (sin puntos futuros).
     """
     inicio = proyecto.fecha_inicio
     fin = proyecto.fecha_fin_prevista or date.today()
@@ -45,28 +44,40 @@ def _serie_avance(proyecto):
     semanas = max(1, math.ceil((fin - inicio).days / 7))
     fechas = [min(inicio + timedelta(days=7 * i), fin) for i in range(semanas + 1)]
 
-    divisor = math.exp(_K_EXPONENCIAL) - 1
+    def logistica(t):
+        return 1 / (1 + math.exp(-_K_LOGISTICA * (t - 0.5)))
 
-    def curva(valor_final):
-        return [round(valor_final
-                      * (math.exp(_K_EXPONENCIAL * i / semanas) - 1) / divisor, 1)
-                for i in range(semanas + 1)]
+    f0, f1 = logistica(0.0), logistica(1.0)
+    plan = [round(100 * (logistica(i / semanas) - f0) / (f1 - f0), 1)
+            for i in range(semanas + 1)]
 
     presupuesto = float(proyecto.presupuesto or 0)
     costo = float(proyecto.costo_total)
+    reales = None
+    if presupuesto > 0:
+        costos = sorted(proyecto.costos, key=lambda c: c.fecha)
+        hoy = date.today()
+        reales = []
+        for f in fechas:
+            if f > hoy:
+                reales.append(None)  # la serie real termina hoy
+            else:
+                acumulado = sum(float(c.monto) for c in costos if c.fecha <= f)
+                reales.append(round(100 * acumulado / presupuesto, 1))
+
     return {
         "etiqueta": proyecto.clave,
         "nombre": proyecto.nombre,
-        "color": COLOR_AVANCE,
+        "color_plan": COLOR_PRESUPUESTO,
         "color_costo": COLOR_COSTO,
         "etiquetas": [f"{f.day:02d} {_MESES_CORTOS[f.month - 1]}" for f in fechas],
         "titulos": [f"Semana {i} · {f.day:02d} {_MESES_CORTOS[f.month - 1]} {f.year}"
                     for i, f in enumerate(fechas)],
-        "datos": curva(proyecto.avance),
+        "plan": plan,
+        "reales": reales,
         "presupuesto": presupuesto,
         "costo": costo,
         "uso": proyecto.uso_presupuesto,
-        "datos_costo": curva(proyecto.uso_presupuesto) if presupuesto > 0 else None,
     }
 
 
@@ -188,7 +199,7 @@ def detalle(id):
     return render_template("proyectos/detalle.html", proyecto=proyecto,
                            recibos=recibos, costo_nomina=costo_nomina,
                            empleados_disponibles=disponibles,
-                           serie_avance=_serie_avance(proyecto))
+                           curva_s=_curva_s(proyecto))
 
 
 @bp.route("/<int:id>/editar", methods=["GET", "POST"])
