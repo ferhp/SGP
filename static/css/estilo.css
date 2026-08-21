@@ -211,6 +211,10 @@ table.tabla { width: 100%; border-collapse: collapse; background: var(--blanco);
 .barra-avance { background: #e8eaed; height: 6px; border-radius: 3px; min-width: 90px; }
 .barra-avance > div { height: 6px; border-radius: 3px; background: var(--azul); }
 .barra-avance.alerta > div { background: var(--rojo); }
+/* Semáforo del panel general: la barra se pinta según el porcentaje. */
+.barra-verde > div { background: var(--verde); }
+.barra-amarilla > div { background: var(--amarillo); }
+.barra-roja > div { background: var(--rojo); }
 
 .select-avance {
   border: 1px solid var(--borde); border-radius: 14px;

@@ -69,14 +69,20 @@
           <span class="chip {{ color.get(p.estado, 'chip-gris') }}">{{ p.estado }}</span>
         </td>
         <td>
-          <div class="barra-avance" title="{{ p.avance }}%"><div style="width: {{ p.avance }}%"></div></div>
+          {# Avance físico: rojo hasta 33 %, amarillo hasta 66 %, verde después. #}
+          {% set c_avance = 'barra-verde' if p.avance >= 67
+                            else ('barra-amarilla' if p.avance >= 34 else 'barra-roja') %}
+          <div class="barra-avance {{ c_avance }}" title="{{ p.avance }}%"><div style="width: {{ p.avance }}%"></div></div>
           <small>{{ p.avance }} %</small>
         </td>
         <td class="num">{{ p.presupuesto | moneda }}</td>
         <td class="num">{{ p.costo_total | moneda }}</td>
         <td>
-          <div class="barra-avance {{ 'alerta' if p.uso_presupuesto > 90 }}" title="{{ p.uso_presupuesto }}%">
-            <div style="width: {{ p.uso_presupuesto }}%"></div>
+          {# Uso del presupuesto: verde hasta 70 %, amarillo hasta 90 %, rojo si lo rebasa. #}
+          {% set c_uso = 'barra-verde' if p.uso_presupuesto <= 70
+                         else ('barra-amarilla' if p.uso_presupuesto <= 90 else 'barra-roja') %}
+          <div class="barra-avance {{ c_uso }}" title="{{ p.uso_presupuesto }}%">
+            <div style="width: {{ [p.uso_presupuesto, 100] | min }}%"></div>
           </div>
           <small>{{ p.uso_presupuesto }} %</small>
         </td>
