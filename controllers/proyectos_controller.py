@@ -15,10 +15,12 @@ from models.proyecto import ESTADOS, TIPOS, Proyecto
 
 bp = Blueprint("proyectos", __name__, url_prefix="/proyectos")
 
-# Colores de las series de la gráfica del proyecto (paleta categórica
-# validada): presupuesto programado en azul, costo acumulado en naranja.
+# Colores de las series de la gráfica del proyecto (trío categórico seguro
+# para daltonismo, tonos Okabe-Ito): presupuesto programado en azul, costo
+# acumulado en naranja e ingresos en verde azulado.
 COLOR_PRESUPUESTO = "#2a78d6"
 COLOR_COSTO = "#eb6834"
+COLOR_INGRESOS = "#009e73"
 
 # Pendiente de la curva S logística (presupuesto programado).
 _K_LOGISTICA = 10.0
@@ -36,6 +38,8 @@ def _curva_s(proyecto):
       normalizada para tocar ambos extremos.
     - Costo acumulado (real): suma acumulada de los costos registrados a cada
       fecha, como % del presupuesto; solo hasta hoy (sin puntos futuros).
+    - Ingresos (real): suma acumulada de los movimientos contables de tipo
+      Ingreso ligados al proyecto, también como % del presupuesto y hasta hoy.
     """
     inicio = proyecto.fecha_inicio
     fin = proyecto.fecha_fin_prevista or date.today()
@@ -53,30 +57,44 @@ def _curva_s(proyecto):
 
     presupuesto = float(proyecto.presupuesto or 0)
     costo = float(proyecto.costo_total)
+    ingresos_total = float(proyecto.ingresos)
     reales = None
+    serie_ingresos = None
     if presupuesto > 0:
-        costos = sorted(proyecto.costos, key=lambda c: c.fecha)
         hoy = date.today()
-        reales = []
-        for f in fechas:
-            if f > hoy:
-                reales.append(None)  # la serie real termina hoy
-            else:
-                acumulado = sum(float(c.monto) for c in costos if c.fecha <= f)
-                reales.append(round(100 * acumulado / presupuesto, 1))
+
+        def acumulada(pares):
+            """Serie acumulada de (fecha, monto) como % del presupuesto."""
+            pares = sorted(pares, key=lambda par: par[0])
+            serie = []
+            for f in fechas:
+                if f > hoy:
+                    serie.append(None)  # las series reales terminan hoy
+                else:
+                    acumulado = sum(m for fecha_mov, m in pares if fecha_mov <= f)
+                    serie.append(round(100 * acumulado / presupuesto, 1))
+            return serie
+
+        reales = acumulada((c.fecha, float(c.monto)) for c in proyecto.costos)
+        serie_ingresos = acumulada((m.fecha, float(m.monto))
+                                   for m in proyecto.movimientos
+                                   if m.tipo == "Ingreso")
 
     return {
         "etiqueta": proyecto.clave,
         "nombre": proyecto.nombre,
         "color_plan": COLOR_PRESUPUESTO,
         "color_costo": COLOR_COSTO,
+        "color_ingresos": COLOR_INGRESOS,
         "etiquetas": [f"{f.day:02d} {_MESES_CORTOS[f.month - 1]}" for f in fechas],
         "titulos": [f"Semana {i} · {f.day:02d} {_MESES_CORTOS[f.month - 1]} {f.year}"
                     for i, f in enumerate(fechas)],
         "plan": plan,
         "reales": reales,
+        "ingresos_serie": serie_ingresos,
         "presupuesto": presupuesto,
         "costo": costo,
+        "ingresos": ingresos_total,
         "uso": proyecto.uso_presupuesto,
     }
 

@@ -33,7 +33,8 @@
     Eje X: semanas del proyecto ({{ proyecto.fecha_inicio }} →
     {{ proyecto.fecha_fin_prevista or 'hoy' }}). Eje Y: % del presupuesto.
     El presupuesto programado sigue una curva S (arranque y cierre suaves);
-    el costo acumulado es el gasto real registrado a cada fecha, hasta hoy.
+    el costo acumulado y los ingresos son los montos reales registrados a
+    cada fecha, hasta hoy.
   </p>
   <div style="height:240px"><canvas id="grafica-avance"></canvas></div>
 </div>
@@ -217,6 +218,22 @@
         clase: 'costo'
       });
     }
+    if (serie.ingresos_serie) {
+      conjuntos.push({
+        label: 'Ingresos — ' + pesos(serie.ingresos),
+        data: serie.ingresos_serie,
+        borderColor: serie.color_ingresos,
+        backgroundColor: serie.color_ingresos,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointStyle: 'triangle',
+        pointBorderColor: '#fcfcfb',
+        pointBorderWidth: 1,
+        tension: 0.35,
+        clase: 'ingresos'
+      });
+    }
 
     new Chart(lienzo, {
       type: 'line',
@@ -243,6 +260,10 @@
                 var monto = serie.presupuesto * pct / 100;
                 if (item.dataset.clase === 'costo') {
                   return ' Costo acumulado real: ' + pct + ' % (' +
+                         pesos(monto) + ')';
+                }
+                if (item.dataset.clase === 'ingresos') {
+                  return ' Ingresos acumulados: ' + pct + ' % (' +
                          pesos(monto) + ')';
                 }
                 return ' Presupuesto programado: ' + pct + ' % (' +
